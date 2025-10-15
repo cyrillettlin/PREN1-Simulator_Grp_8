@@ -69,7 +69,7 @@ for i, (score, cnt) in enumerate(best_matches):
         cv.putText(output_target, f"{i+1}", (cx - 10, cy + 10), cv.FONT_HERSHEY_SIMPLEX, 1, color, 3)
 
 # Beide Bilder anzeigen
-cv.imshow("Vergleichsbild mit Vergleichskontur", output_example)
-cv.imshow("Zielbild mit vier ähnlichsten Konturen", output_target)
-cv.waitKey(0)
-cv.destroyAllWindows()
+#cv.imshow("Vergleichsbild mit Vergleichskontur", output_example)
+#cv.imshow("Zielbild mit vier ähnlichsten Konturen", output_target)
+#cv.waitKey(0)
+#cv.destroyAllWindows()
