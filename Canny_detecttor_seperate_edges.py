@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 
 # Dein bestehendes Bild
-src = cv.imread(r"C:\Users\cyril\OneDrive - Hochschule Luzern\Documents\HSLU\3. Semester\PREN1\Simulator\experiments\Data\5990104323121597224.jpg")
+src = cv.imread(r"C:\Users\cyril\OneDrive - Hochschule Luzern\Documents\HSLU\3. Semester\PREN1\Simulator\experiments\Data\6017330782235905212.jpg")
 src_gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
 
 # Kanten finden
@@ -31,13 +31,13 @@ for i, contour in enumerate(contours):
 for i, c in enumerate(contours):
     area = cv.contourArea(c)
     perimeter = cv.arcLength(c, True)
-    print(f"Objekt {i+1}: Fläche={area:.2f}, Umfang={perimeter:.2f}")
+    #print(f"Objekt {i+1}: Fläche={area:.2f}, Umfang={perimeter:.2f}")
 
 
 for i in range(len(contours)):
     for j in range(i+1, len(contours)):
         similarity = cv.matchShapes(contours[i], contours[j], cv.CONTOURS_MATCH_I1, 0.0)
-        print(f"Ähnlichkeit Objekt {i+1} ↔ Objekt {j+1}: {similarity:.4f}")
+        #print(f"Ähnlichkeit Objekt {i+1} ↔ Objekt {j+1}: {similarity:.4f}")
 
 
 #Vergleich nach Ähnlichkeit und/oder Flächengrösse
