@@ -7,11 +7,11 @@ import argparse
 
 
 #Vergleichsbild
-srcexample = cv.imread(r"C:\Users\cyril\OneDrive - Hochschule Luzern\Documents\HSLU\3. Semester\PREN1\Simulator\experiments\Data\6017330782235905198.jpg")
+srcexample = cv.imread("Data/6017330782235905198.jpg")
 srcexample_gray = cv.cvtColor(srcexample, cv.COLOR_BGR2GRAY)
 
 # Dein bestehendes Bild
-src = cv.imread(r"C:\Users\cyril\OneDrive - Hochschule Luzern\Documents\HSLU\3. Semester\PREN1\Simulator\experiments\Data\5990104323121597224.jpg")
+src = cv.imread("Data/5990104323121597224.jpg")
 src_gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
 
 # Kanten finden

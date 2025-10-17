@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 
 # Dein bestehendes Bild
-src = cv.imread(r"C:\Users\cyril\OneDrive - Hochschule Luzern\Documents\HSLU\3. Semester\PREN1\Simulator\experiments\Data\6017330782235905212.jpg")
+src = cv.imread("Data/5990104323121597224.jpg")
 src_gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
 
 # Kanten finden
@@ -12,6 +12,9 @@ edges = cv.Canny(src_gray, 50, 150)
 
 # Konturen finden
 contours, hierarchy = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+# Nur die 4 grössten Contours behalten.
+contours = sorted(contours, key=cv.contourArea, reverse=True)[:4]
 
 # Kopie für die Visualisierung
 output = src.copy()
