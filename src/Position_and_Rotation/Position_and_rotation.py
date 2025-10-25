@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 import cv2 as cv
-from Position_and_Rotation.ShapeAnalyzer import ShapeAnalyzer
+from ShapeAnalyzer import ShapeAnalyzer
 
 analyzer = ShapeAnalyzer("Data/5990104323121597224.jpg")
 analyzer.process(top_n=10)           # runs load → edges → find → top N → annotate
