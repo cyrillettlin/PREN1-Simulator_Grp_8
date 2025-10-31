@@ -1,6 +1,7 @@
 from __future__ import print_function
 from puzzle import puzzle
 
+import os
 import cv2 as cv
 import numpy as np
 
@@ -8,7 +9,7 @@ import numpy as np
 class EdgeDetection:
     
     def __init__(self, path_to_file: str):
-        self.path_to_file = path_to_file
+        self.path_to_file = os.path.normpath(path_to_file)
         #Definiere Threshold
         self.low_threshold = 100
         self.high_threshold = 300
@@ -21,26 +22,28 @@ class EdgeDetection:
 
     def load(self):
         #Bild laden
-        self.src = cv.imread(path_to_file)
+        self.src = cv.imread(self.path_to_file)
         if self.src is None:
             raise FileNotFoundError(f"Datei nicht gefunden: {self.path_to_file}")
-        self.src_gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+        self.src_gray = cv.cvtColor(self.src, cv.COLOR_BGR2GRAY)
         
     def find_contours(self):
-        #Katen- und Kontourenerkennung
+        """Kanten- und Konturenerkennung"""
 
         # Kanten finden
         img_blur = cv.blur(self.src_gray, (3,3))
         self.edges = cv.Canny(img_blur, self.low_threshold, self.high_threshold, 3)
 
-        # Konturen finden
-        self.contours = cv.findContours(self.edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        # Konturen finden 
+        contours, _ = cv.findContours(self.edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        self.contours = contours
         return self.contours
+
     
     def separate_contours(self):
         if not self.contours:
             raise ValueError("Keine Konturen gefunden. Bitte zuerst find_contours() aufrufen.")
-        self.contours = sorted(contours, key=cv.contourArea, reverse=True)
+        self.contours = sorted(self.contours, key=cv.contourArea, reverse=True)
         #Vier grösste Konturen
         self.largest_contours = self.contours[:4]
 
