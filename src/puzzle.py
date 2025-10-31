@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-import argparse
 
 class puzzle:
 
@@ -40,7 +39,6 @@ class puzzle:
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
             return (cx, cy)
-            #Auf Polarform anpassen
         else:
             return (0, 0)
     

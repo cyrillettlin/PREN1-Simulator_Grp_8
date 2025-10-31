@@ -16,7 +16,10 @@ Code for the simulator in PREN I.
 
 # Installation 🛠️
 pip install opencv-python
+pip install numpy
 
 pip install pytest
+
+
 
 
