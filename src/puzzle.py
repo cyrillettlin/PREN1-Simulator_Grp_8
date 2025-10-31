@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 import argparse
 
-class puzzle:
+class Puzzle:
 
     def __init__(self, contour, index):
         self.index = index
