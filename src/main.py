@@ -2,7 +2,7 @@ from edgedetection import EdgeDetection
 from puzzle import Puzzle
 
 
-path = r"C:\Users\cyril\OneDrive - Hochschule Luzern\Documents\HSLU\3. Semester\PREN1\Simulator\experiments\Data\5776130955109141471.jpg"
+path = "Data/best_example.jpg"
 
 
 detector = EdgeDetection(path)
