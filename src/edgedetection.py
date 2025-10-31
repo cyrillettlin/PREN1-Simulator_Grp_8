@@ -46,11 +46,11 @@ class EdgeDetection:
         self.contours = sorted(self.contours, key=cv.contourArea, reverse=True)
         #Vier grösste Konturen
         self.largest_contours = self.contours[:4]
-
-    def create_puzzle(self):
         self.puzzle_pieces = [puzzle(cnt, i + 1) for i, cnt in enumerate(self.largest_contours)]
-        for piece in puzzle_pieces:
-            print(piece)
+
+        
+    def get_puzzle_pieces(self):
+        return self.puzzle_pieces
 
 
 
