@@ -8,10 +8,10 @@ class Puzzle:
         self.contour = contour
         self.area = cv.contourArea(contour)
         self.bounding_box = cv.boundingRect(contour)
-        self.centre_point
+        self.center_point = self.get_center_point()
         #CenterPoint
 
-    def get_puzzle_edges():
+    def get_puzzle_edges(self):
         # Gedrehte Bounding Box um das Puzzleteil
         rect = cv.minAreaRect(self.contour)
         box = cv.boxPoints(rect)
@@ -32,7 +32,7 @@ class Puzzle:
         #bottom_edge = edges[2]
         #left_edge = edges[3]
 
-    def get_center_point():
+    def get_center_point(self):
         #calculation
         M = cv.moments(self.contour)
         if M["m00"] != 0:

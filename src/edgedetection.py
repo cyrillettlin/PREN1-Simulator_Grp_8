@@ -1,5 +1,5 @@
 from __future__ import print_function
-from puzzle import Puzzle
+from Puzzle import Puzzle
 
 import os
 import cv2 as cv
@@ -46,7 +46,7 @@ class EdgeDetection:
         self.contours = sorted(self.contours, key=cv.contourArea, reverse=True)
         #Vier grösste Konturen
         self.largest_contours = self.contours[:4]
-        self.puzzle_pieces = [puzzle(cnt, i + 1) for i, cnt in enumerate(self.largest_contours)]
+        self.puzzle_pieces = [Puzzle(cnt, i + 1) for i, cnt in enumerate(self.largest_contours)]
 
         
     def get_puzzle_pieces(self):
