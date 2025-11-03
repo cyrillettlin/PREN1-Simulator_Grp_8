@@ -2,8 +2,8 @@ from edgedetection import EdgeDetection
 from Puzzle import Puzzle
 
 
+# path = "Data/Real-Puzzle.jpg"
 path = "Data/best_example.jpg"
-
 
 detector = EdgeDetection(path)
 detector.load()
