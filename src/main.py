@@ -1,4 +1,4 @@
-from edgedetection import EdgeDetection
+from Edgedetection import EdgeDetection
 from Puzzle import Puzzle
 
 
