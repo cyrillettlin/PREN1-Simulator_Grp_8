@@ -53,31 +53,48 @@ class EdgeDetection:
         return self.puzzle_pieces
 
 
-
-#Output prov.
     def show_result(self):
-            """Zeigt das Originalbild mit Konturen und Infos an."""
-            output = self.src.copy()
-            colors = [(0, 255, 0), (0, 255, 255), (255, 0, 0), (0, 0, 255)]
+        """Zeigt das Originalbild mit Konturen und Infos an."""
+        output = self.src.copy()
+        colors = [(0, 255, 0), (0, 255, 255), (255, 0, 0), (0, 0, 255)]
 
-            for i, cnt in enumerate(self.largest_contours):
-                color = colors[i % len(colors)]
-                cv.drawContours(output, [cnt], -1, color, 3)
-                M = cv.moments(cnt)
-                if M["m00"] != 0:
-                    cx = int(M["m10"] / M["m00"])
-                    cy = int(M["m01"] / M["m00"])
-                    area = cv.contourArea(cnt)
-                    cv.putText(output, f"#{i+1} ({int(area)}px)", (cx - 40, cy + 10),
-                            cv.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+        for i, cnt in enumerate(self.largest_contours):
+            color = colors[i % len(colors)]
 
-            cv.putText(output, f"Low: {self.low_threshold}", (10, 30),
-                    cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-            cv.putText(output, f"High: {self.high_threshold}", (10, 60),
-                    cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-            
-            scaled_output = cv.resize(output, None, fx=0.5, fy=0.5, interpolation=cv.INTER_AREA) #Bild skalieren
+            # Kontur zeichnen
+            cv.drawContours(output, [cnt], -1, color, 3)
 
-            cv.imshow("Vier groesste Konturen", scaled_output)
-            cv.waitKey(0)
-            cv.destroyAllWindows()
+            # Ecken markieren
+            piece = self.puzzle_pieces[i]
+            corners = piece.get_best_4_corners()
+            for j, corner in enumerate(corners):
+                cv.circle(output, corner, 6, (0, 255, 255), -1)
+                cv.putText(output, f"{j+1}",
+                        (corner[0] + 5, corner[1] - 5),
+                        cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                
+            # Flächen-Text in der Mitte des Teils
+            M = cv.moments(cnt)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                area = cv.contourArea(cnt)
+                cv.putText(output, f"#{i+1} ({int(area)}px)",
+                        (cx - 40, cy + 10),
+                        cv.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+
+        # Schwellenwerte in Ecke schreiben
+        cv.putText(output, f"Low: {self.low_threshold}",
+                (10, 30),
+                cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        cv.putText(output, f"High: {self.high_threshold}",
+                (10, 60),
+                cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+        # Bild skalieren
+        scaled_output = cv.resize(output, None, fx=0.5, fy=0.5, interpolation=cv.INTER_AREA)
+
+        cv.imshow("Puzzle", scaled_output)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+
