@@ -11,8 +11,8 @@ class EdgeDetection:
     def __init__(self, path_to_file: str):
         self.path_to_file = os.path.normpath(path_to_file)
         #Definiere Threshold
-        self.low_threshold = 100
-        self.high_threshold = 300
+        self.low_threshold = 100 #100
+        self.high_threshold = 300 #300
         self.src = None
         self.src_gray = None
         self.edges = None
@@ -75,7 +75,9 @@ class EdgeDetection:
                     cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
             cv.putText(output, f"High: {self.high_threshold}", (10, 60),
                     cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+            
+            scaled_output = cv.resize(output, None, fx=0.5, fy=0.5, interpolation=cv.INTER_AREA) #Bild skalieren
 
-            cv.imshow("Vier groesste Konturen", output)
+            cv.imshow("Vier groesste Konturen", scaled_output)
             cv.waitKey(0)
             cv.destroyAllWindows()
