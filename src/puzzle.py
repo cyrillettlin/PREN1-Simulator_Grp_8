@@ -11,21 +11,45 @@ class Puzzle:
         self.center_point = self.get_center_point()
         #CenterPoint
 
-    def get_puzzle_edges(self):
-        # Gedrehte Bounding Box um das Puzzleteil
-        rect = cv.minAreaRect(self.contour)
-        box = cv.boxPoints(rect)
-        box = np.intp(box)
+    def get_best_4_corners(self):
+        hull = cv.convexHull(self.contour)
 
-    # Kanten in Reihenfolge: oben, rechts, unten, links
+        peri = cv.arcLength(hull, True)
+        epsilon = 0.02 * peri
+        approx = cv.approxPolyDP(hull, epsilon, True)
+
+        # bei mehr als vier Ecken
+        while len(approx) > 4 and epsilon < 0.1 * peri:
+            epsilon += 0.01 * peri
+            approx = cv.approxPolyDP(hull, epsilon, True)
+
+        corners = [tuple(pt[0]) for pt in approx]
+        return corners
+
+    # def get_puzzle_edges(self):
+    #     # Gedrehte Bounding Box um das Puzzleteil
+    #     rect = cv.minAreaRect(self.contour)
+    #     box = cv.boxPoints(rect)
+    #     box = np.intp(box)
+# 
+    #     # Kanten in Reihenfolge: oben, rechts, unten, links
+    #     edges = []
+    #     for i in range(4):
+    #         p1 = tuple(box[i])
+    #         p2 = tuple(box[(i + 1) % 4])
+    #         edges.append((p1, p2))
+    #     return edges, box
+    
+    def get_edges_from_corners(corners):
         edges = []
         for i in range(4):
-            p1 = tuple(box[i])
-            p2 = tuple(box[(i + 1) % 4])
+            p1 = corners[i]
+            p2 = corners[(i + 1) % 4]
             edges.append((p1, p2))
-        return edges, box
-    
+        return edges
+
         #Kanten ansprechen im Vergleichsverfahren --> Laura
+        
         #edges, box = get_puzzle_edges(contour)
         #top_edge = edges[0]     
         #right_edge = edges[1]
@@ -48,20 +72,7 @@ class Puzzle:
         return f"PuzzlePiece {self.index}: Fläche={self.area:.2f}, Box=({x},{y},{w},{h})"
     
 
-    def get_best_4_corners(self):
-        hull = cv.convexHull(self.contour)
 
-        peri = cv.arcLength(hull, True)
-        epsilon = 0.02 * peri
-        approx = cv.approxPolyDP(hull, epsilon, True)
-
-        # bei mehr als vier Ecken
-        while len(approx) > 4 and epsilon < 0.1 * peri:
-            epsilon += 0.01 * peri
-            approx = cv.approxPolyDP(hull, epsilon, True)
-
-        corners = [tuple(pt[0]) for pt in approx]
-        return corners
 
     
 
