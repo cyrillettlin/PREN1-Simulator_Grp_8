@@ -3,12 +3,10 @@ import matplotlib.patches as patches
 import numpy as np
 import cv2 as cv
 
-
-
-
 class PositionAndRotation:
 
-
+    def __init__(self, puzzle):
+        self.contour
 
     # Translate a contour.
     def translate_contour(contour, x_axis, y_axis):
@@ -79,7 +77,7 @@ class PositionAndRotation:
                     color=color, fontsize=10, weight='bold')
 
     def plotAll():
-            plt.gca().invert_yaxis()
-    plt.axis("equal")
-    plt.autoscale(False)
-    plt.show()
+        plt.gca().invert_yaxis()
+        plt.axis("equal")
+        plt.autoscale(False)
+        plt.show()
