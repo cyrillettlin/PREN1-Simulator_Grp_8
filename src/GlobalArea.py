@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple, Optional
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -40,74 +41,115 @@ class GlobalArea:
 
     All positions are defined in absolute coordinates on that same plane.
     """
-
     def __init__(
         self,
-        base: Rect,
-        area_unsolved: Rect,
-        area_solved: Rect,
+        base: Optional["Rect"] = None,
+        area_unsolved: Optional["Rect"] = None,
+        area_solved: Optional["Rect"] = None,
         *,
-        pixels_to_mm_ratio: Optional[Tuple[float, float]] = (0.25,0.25)
+        pixels_to_mm_ratio: Optional[Tuple[float, float]] = (0.25, 0.25)
     ) -> None:
         """
         Parameters
         ----------
-        base : Rect
+        base : Rect, optional
             The total working area (absolute position and size).
-        area_unsolved : Rect
+        area_unsolved : Rect, optional
             Exact coordinates of the unsolved zone within the plane.
-        area_solved : Rect
+        area_solved : Rect, optional
             Exact coordinates of the solved zone within the plane.
         pixels_to_mm_ratio : (sx, sy), optional
             Pixel-to-mm scale factors if you want to convert image pixels
             to real-world millimeters. Example: (0.25, 0.25) means
             each pixel equals 0.25 mm.
         """
+        # Default values if not provided
+        if base is None:
+            base = Rect(x=0.0, y=0.0, w=450, h=450)
+        if area_unsolved is None:
+            area_unsolved = Rect(x=76.5, y=200, w=297.0, h=210)
+        if area_solved is None:
+            area_solved = Rect(x=120, y=20, w=210, h=148)
+
+        # Assign to instance
         self.base = base
         self.area_unsolved = area_unsolved
         self.area_solved = area_solved
         self.ratiox, self.ratioy = pixels_to_mm_ratio
+        self.unsolved_contours= []
+        self.solved_contours =[]
+        
 
-    # --------------------------------------------------
-    # Conversion methods (using per-axis ratios)
-    # --------------------------------------------------
-    def px_to_mm(self, u_px: float, v_px: float) -> tuple[float, float]:
+    def set_unsolved_contours(self, puzzles) -> None:
         """
-        Convert image pixel coordinates (u_px, v_px) to millimeters (x_mm, y_mm)
-        using the X and Y pixel-to-mm ratios defined for this GlobalArea.
+        Import contours from puzzles and invert the Y-axis
+        so that (0,0) is bottom-left instead of top-left.
+        """
+        img_height = 964
+        self.contours = []  # reset list
+        for p in puzzles:
+            cnt = np.asarray(p.contour).reshape(-1, 2).astype(float)
+            # Invert Y axis
+            cnt[:, 1] = img_height - cnt[:, 1]
+            self.contours.append(cnt)
+    
+    def set_solved_contours(self, puzzles) -> None:
+        """
+        Import contours from puzzles and invert the Y-axis
+        so that (0,0) is bottom-left instead of top-left.
+        """
+        img_height = 964
+        self.contours = []  # reset list
+        for p in puzzles:
+            cnt = np.asarray(p.contour).reshape(-1, 2).astype(float)
+            # Invert Y axis
+            cnt[:, 1] = img_height - cnt[:, 1]
+            self.contours.append(cnt)
+
+        
+
+    def scale_contours(self,ratio_x,ratio_y)-> None:
+        """
+        Scales the contours by the given Ratio.
+        Smaller Number makes it smaller. Larger makes larger.
+        """
+        scaled =[]
+        
+        ratio_x = ratio_x
+        ratio_y = ratio_y
+        contours = self.contours
+        for cnt in contours:
+            pts = cnt.reshape(-1, 2).astype(float)
+            pts = pts * [ratio_x, ratio_y]  # scale
+            scaled.append(pts)
+        self.contours = scaled
+    
+    def translate_contours(self, dx: float, dy: float) -> None:
+        """
+        Translate all contours in the global coordinate system
+        by a given (dx, dy) offset in millimeters.
 
         Parameters
         ----------
-        u_px, v_px : float
-            Pixel coordinates (e.g., from a contour centroid).
-
-        Returns
-        -------
-        (x_mm, y_mm) : tuple of float
-            Converted coordinates in millimeters.
+        dx : float
+            Translation distance along X-axis (mm). Positive → right.
+        dy : float
+            Translation distance along Y-axis (mm). Positive → up.
         """
-        x_mm = u_px * self.sx
-        y_mm = v_px * self.sy
-        return x_mm, y_mm
+        if not hasattr(self, "contours") or not self.contours:
+            print("No contours to translate.")
+            return
 
-    def mm_to_px(self, x_mm: float, y_mm: float) -> tuple[float, float]:
-        """
-        Convert millimeter coordinates (x_mm, y_mm) back to image pixels (u_px, v_px)
-        using the X and Y pixel-to-mm ratios defined for this GlobalArea.
+        translated = []
+        for cnt in self.contours:
+            pts = np.asarray(cnt).reshape(-1, 2).astype(float)
+            pts[:, 0] += dx
+            pts[:, 1] += dy
+            translated.append(pts)
 
-        Parameters
-        ----------
-        x_mm, y_mm : float
-            Physical coordinates in millimeters.
+        self.contours = translated
 
-        Returns
-        -------
-        (u_px, v_px) : tuple of float
-            Converted coordinates in pixels.
-        """
-        u_px = x_mm / self.sx
-        v_px = y_mm / self.sy
-        return u_px, v_px
+
 
 
     # ------------------------------------------------------------------
@@ -136,6 +178,15 @@ class GlobalArea:
         draw_rect(self.area_unsolved, 'tab:blue', 'UNSOLVED')
         draw_rect(self.area_solved, 'tab:green', 'SOLVED')
 
+        # --- Draw contours if available ---
+        if hasattr(self, "contours") and self.contours:
+            for cnt in self.contours:
+                pts = np.asarray(cnt).reshape(-1, 2)
+                closed = np.vstack([pts, pts[0]])  # close contour for plotting
+                ax.plot(closed[:, 0], closed[:, 1],
+                        '-', lw=1.5, color='tab:red', alpha=0.8)
+
+
         # Set axis limits to the base rectangle extents (so we don't get 0..1)
         ax.set_xlim(self.base.x - margin, self.base.right + margin)
         ax.set_ylim(self.base.y - margin, self.base.bottom + margin)
@@ -155,24 +206,12 @@ class GlobalArea:
 
 
 if __name__ == "__main__":
-    # Base board is 600 × 400 mm
-    base = Rect(x=0.0, y=0.0, w=600.0, h=400.0)
 
-    # Unsolved zone occupies the left side of the table
-    area_unsolved = Rect(x=20.0, y=20.0, w=260.0, h=360.0)
-
-    # Solved zone is on the right side, with a 40 mm gap between them
-    area_solved = Rect(x=320.0, y=120.0, w=260.0, h=260.0)
-
+    
     # Optional: you know that each camera pixel = 0.25 mm in both axes
     pixels_to_mm_ratio = (0.25, 0.25)
 
-    ga = GlobalArea(
-        base=base,
-        area_unsolved=area_unsolved,
-        area_solved=area_solved,
-        pixels_to_mm_ratio=pixels_to_mm_ratio,
-    )
+    ga = GlobalArea(pixels_to_mm_ratio=pixels_to_mm_ratio)
 
     # Show the layout on the coordinate plane
     ga.show(invert_y=False)

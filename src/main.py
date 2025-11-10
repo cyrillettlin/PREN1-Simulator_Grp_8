@@ -1,5 +1,5 @@
-from Edgedetection import EdgeDetection
-from Puzzle import Puzzle
+from edgedetection import EdgeDetection
+from puzzle import Puzzle
 
 
 # path = "Data/Real-Puzzle.jpg"

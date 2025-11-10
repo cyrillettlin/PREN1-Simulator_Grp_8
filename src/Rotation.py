@@ -65,7 +65,7 @@ class Rotation:
         # Normalize to (N, 2), float
         pts = np.asarray(contour, dtype=np.float32).reshape(-1, 2)
 
-        # Determine rotation center
+    # TODO: Replace with the getCenterPoint Method of Puzzles!! Determine rotation center----------------------
         if center_xy is not None:
             cx, cy = center_xy
         else:
@@ -76,7 +76,7 @@ class Rotation:
             else:
                 # Degenerate contour (area ~ 0): use arithmetic mean as fallback
                 cx, cy = pts.mean(axis=0)
-
+    # ----------------------------------------------------------------------------------------------------------
         center = np.array([cx, cy], dtype=np.float32)
 
         # Rotation matrix (2x2)
@@ -96,7 +96,7 @@ class Rotation:
     
 
 
-    def plot_contours(self, contours, cmap='tab10', linewidth=2, title='Detected Contours'):
+    def show(self, contours, cmap='tab10', linewidth=2, title='Detected Contours'):
         """
         Displays all contours in a matplotlib window with colors, area info, and proper scaling.
         """
@@ -144,7 +144,7 @@ class Rotation:
 if __name__ == "__main__":
     from edgedetection import EdgeDetection
 
-    # Rotation Demo/ Walktrough. This Demo Allgns Puzzle 1 with Puzzle 3. 
+    # Rotation Demo/ Walktrough. This Demo Allgns Puzzle 1 with Puzzle 4. 
     ##Get Puzzles using EdgeDetection
     path = "Data/best_example.jpg"
     detector = EdgeDetection(path)
@@ -155,11 +155,12 @@ if __name__ == "__main__":
     puzzles = detector.get_puzzle_pieces()
     puzzle1 = puzzles[0]
     puzzle3 = puzzles[2]
+    puzzle4 = puzzles[3]
 
 
 
     line1 = puzzle1.get_best_4_corners()[0], puzzle1.get_best_4_corners()[1]
-    line2 = puzzle3.get_best_4_corners()[3], puzzle3.get_best_4_corners()[0]
+    line2 = puzzle4.get_best_4_corners()[1], puzzle3.get_best_4_corners()[0]
 
     #print(puzzle1.get_best_4_corners()[0], puzzle1.get_best_4_corners()[1])
 
@@ -176,8 +177,8 @@ if __name__ == "__main__":
     cnt5 = aligner.rotate_contour(contours[0],angle, center) 
     contours.append(cnt5)
 
-    #detector.show_result()
-    aligner.plot_contours(contours)
+    detector.show_result()
+    aligner.show(contours)
 
 
 
