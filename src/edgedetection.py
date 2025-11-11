@@ -1,5 +1,5 @@
 from __future__ import print_function
-from puzzle import Puzzle
+from Puzzle import Puzzle
 
 import os
 import cv2 as cv
