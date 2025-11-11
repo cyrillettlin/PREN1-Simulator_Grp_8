@@ -52,9 +52,8 @@ class EdgeDetection:
     def get_puzzle_pieces(self):
         return self.puzzle_pieces
 
-
     def show_result(self):
-        """Zeigt das Originalbild mit Konturen und Infos an."""
+        """Zeigt das Originalbild mit Konturen, Bounding Box, Ecken und Infos an."""
         output = self.src.copy()
         colors = [(0, 255, 0), (0, 255, 255), (255, 0, 0), (0, 0, 255)]
 
@@ -64,6 +63,10 @@ class EdgeDetection:
             # Kontur zeichnen
             cv.drawContours(output, [cnt], -1, color, 3)
 
+            # Bounding Box zeichnen
+            edges, box = self.puzzle_pieces[i].get_puzzle_edges()
+            cv.polylines(output, [box], isClosed=True, color=(255, 255, 0), thickness=2)  # Gelb
+
             # Ecken markieren
             piece = self.puzzle_pieces[i]
             corners = piece.get_best_4_corners()
@@ -72,7 +75,7 @@ class EdgeDetection:
                 cv.putText(output, f"{j+1}",
                         (corner[0] + 5, corner[1] - 5),
                         cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
-                
+
             # Flächen-Text in der Mitte des Teils
             M = cv.moments(cnt)
             if M["m00"] != 0:
@@ -92,9 +95,8 @@ class EdgeDetection:
                 cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
         # Bild skalieren
-        scaled_output = cv.resize(output, None, fx=0.5, fy=0.5, interpolation=cv.INTER_AREA)
+        scaled_output = cv.resize(output, None, fx=0.4, fy=0.4, interpolation=cv.INTER_AREA)
 
         cv.imshow("Puzzle", scaled_output)
         cv.waitKey(0)
         cv.destroyAllWindows()
-
