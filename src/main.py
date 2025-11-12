@@ -1,5 +1,4 @@
 from edgedetection import EdgeDetection
-from Puzzle import Puzzle
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
