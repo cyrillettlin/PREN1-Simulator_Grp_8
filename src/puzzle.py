@@ -174,7 +174,7 @@ class Puzzle:
             return (cx, cy)
         else:
             return (0, 0)
-        
+
     def get_rotated_bounding_box(self):
 
         rect = cv.minAreaRect(self.contour)   # (center, (width, height), angle)
@@ -197,7 +197,7 @@ class Puzzle:
         left_edge = [tuple(bl), tuple(tl)]
 
         return [top_edge, right_edge, bottom_edge, left_edge]
-    
+
 
     def __repr__(self):
         x, y, w, h = self.bounding_box

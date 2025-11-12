@@ -1,0 +1,12 @@
+{
+    "configurations": [
+
+        {
+            "name": "Python: Aktuelles Skript",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
