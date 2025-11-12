@@ -11,5 +11,3 @@ detector.load()
 detector.find_contours()
 detector.separate_contours()
 detector.show_result()
-
-

@@ -40,10 +40,14 @@ class EdgeDetection:
         return self.contours
 
     
-    def separate_contours(self):
+    #min_area nach belieben anpassen.
+    #soll verhindern das kleinere Objekte wie Winde erkannt wird.
+    def separate_contours(self, min_area=10):
         if not self.contours:
             raise ValueError("Keine Konturen gefunden. Bitte zuerst find_contours() aufrufen.")
-        self.contours = sorted(self.contours, key=cv.contourArea, reverse=True)
+        
+        filtered_contours = [c for c in self.contours if cv.contourArea(c) >= min_area]
+        self.contours = sorted(filtered_contours, key=cv.contourArea, reverse=True)
         #Vier grösste Konturen
         self.largest_contours = self.contours[:4]
         self.puzzle_pieces = [Puzzle(cnt, i + 1) for i, cnt in enumerate(self.largest_contours)]
@@ -53,22 +57,31 @@ class EdgeDetection:
         return self.puzzle_pieces
 
     def show_result(self):
-        """Zeigt das Originalbild mit Konturen, Bounding Box, Ecken und Infos an."""
+        """
+        Zeigt die vom Puzzle-Objekt erkannten Edges (aus get_puzzle_edges)
+        farblich markiert mit den entsprechenden Ecken.
+        """
         output = self.src.copy()
-        colors = [(0, 255, 0), (0, 255, 255), (255, 0, 0), (0, 0, 255)]
 
-        for i, cnt in enumerate(self.largest_contours):
-            color = colors[i % len(colors)]
+        # Farben für die vier Edges (top, right, bottom, left)
+        edge_colors = [
+            (0, 255, 255),   # Gelb
+            (255, 0, 255),   # Magenta
+            (255, 255, 0),   # Cyan
+            (0, 165, 255)    # Orange
+        ]
 
-            # Kontur zeichnen
-            cv.drawContours(output, [cnt], -1, color, 3)
+        for piece in self.puzzle_pieces:
+            # --- Erhalte Edges aus Puzzle.py ---
+            edges = piece.get_puzzle_edges()
 
-            # Bounding Box zeichnen
-            edges, box = self.puzzle_pieces[i].get_puzzle_edges()
-            cv.polylines(output, [box], isClosed=True, color=(255, 255, 0), thickness=2)  # Gelb
+            # --- Zeichne jede Edge mit eigener Farbe ---
+            for i, edge_points in enumerate(edges):
+                if edge_points and len(edge_points) > 1:
+                    pts_array = np.array(edge_points, dtype=np.int32)
+                    cv.polylines(output, [pts_array], isClosed=False, color=edge_colors[i % 4], thickness=2)
 
-            # Ecken markieren
-            piece = self.puzzle_pieces[i]
+            # --- Ecken markieren ---
             corners = piece.get_best_4_corners()
             for j, corner in enumerate(corners):
                 cv.circle(output, corner, 6, (0, 255, 255), -1)
@@ -76,27 +89,18 @@ class EdgeDetection:
                         (corner[0] + 5, corner[1] - 5),
                         cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
-            # Flächen-Text in der Mitte des Teils
-            M = cv.moments(cnt)
-            if M["m00"] != 0:
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
-                area = cv.contourArea(cnt)
-                cv.putText(output, f"#{i+1} ({int(area)}px)",
-                        (cx - 40, cy + 10),
-                        cv.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-
-        # Schwellenwerte in Ecke schreiben
-        cv.putText(output, f"Low: {self.low_threshold}",
-                (10, 30),
-                cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-        cv.putText(output, f"High: {self.high_threshold}",
-                (10, 60),
-                cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-
-        # Bild skalieren
+        # Bild verkleinern für Übersicht
         scaled_output = cv.resize(output, None, fx=0.4, fy=0.4, interpolation=cv.INTER_AREA)
 
-        cv.imshow("Puzzle", scaled_output)
+        cv.imshow("Detected Puzzle Edges", scaled_output)
         cv.waitKey(0)
         cv.destroyAllWindows()
+
+
+# Aktuelle Probleme bei Erkennung:
+# Gewisse Puzzle Objekte erkennen eine zu kleine Area andere eine zu grosse (
+# z.B Real-Puzzle_2 erkennt Schraubenwinde aber Puzzle 4 nicht) --> Möglicher SimalarityCheck mit
+# Puzzlevorlage
+
+# Ecken werden nicht zuverlässig erkennt --> Recherche bessere Lösungsansätze
+
