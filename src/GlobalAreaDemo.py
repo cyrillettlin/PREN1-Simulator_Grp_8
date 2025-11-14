@@ -22,7 +22,7 @@ puzzles = detector.get_puzzle_pieces()
 #Instatntiate Global Area
 ga = GlobalArea()
 #Import the contours of the puzzle pieces.
-ga.setContour(puzzles)
+ga.set_contour(puzzles)
 # Scale the contours to the area of the 
 ga.scale_contours(0.20,0.20)
 ga.translate_contours(75,200)

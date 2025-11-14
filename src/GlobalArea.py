@@ -47,7 +47,7 @@ class GlobalArea:
         area_unsolved: Optional["Rect"] = None,
         area_solved: Optional["Rect"] = None,
         *,
-        pixels_to_mm_ratio: Optional[Tuple[float, float]] = (0.25, 0.25)
+        pixels_to_mm_ratio: Tuple[float, float] = (0.25, 0.25)
     ) -> None:
         """
         Parameters
@@ -76,11 +76,11 @@ class GlobalArea:
         self.area_unsolved = area_unsolved
         self.area_solved = area_solved
         self.ratiox, self.ratioy = pixels_to_mm_ratio
-        self.unsolved_contours= []
+        self.contours= []
         self.solved_contours =[]
         
 
-    def set_unsolved_contours(self, puzzles) -> None:
+    def set_contour(self, puzzles) -> None:
         """
         Import contours from puzzles and invert the Y-axis
         so that (0,0) is bottom-left instead of top-left.
