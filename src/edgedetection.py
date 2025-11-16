@@ -7,12 +7,10 @@ import numpy as np
 
 
 class EdgeDetection:
+    MIN_AREA = 900
     
     def __init__(self, path_to_file: str):
         self.path_to_file = os.path.normpath(path_to_file)
-        #Definiere Threshold
-        self.low_threshold = 100 #100
-        self.high_threshold = 300 #300
         self.src = None
         self.src_gray = None
         self.edges = None
@@ -21,36 +19,33 @@ class EdgeDetection:
         self.puzzle_pieces = []
 
     def load(self):
-        #Bild laden
+        """ load image from path in main"""
         self.src = cv.imread(self.path_to_file)
         if self.src is None:
             raise FileNotFoundError(f"Datei nicht gefunden: {self.path_to_file}")
         self.src_gray = cv.cvtColor(self.src, cv.COLOR_BGR2GRAY)
+        return self
         
     def find_contours(self):
-        """Kanten- und Konturenerkennung"""
+        """Find contours using Gaussian blur + Otsu threshold."""
+        img_blur = cv.GaussianBlur(self.src_gray, (5,5), 0)
+        _, img_thresh = cv.threshold(img_blur, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+        cv.imshow('thresh', img_thresh)
 
-        # Kanten finden
-        img_blur = cv.blur(self.src_gray, (3,3))
-        self.edges = cv.Canny(img_blur, self.low_threshold, self.high_threshold, 3)
-
-        # Konturen finden 
-        contours, _ = cv.findContours(self.edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv.findContours(img_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         self.contours = contours
-        return self.contours
+        return contours
 
-    
-    #min_area nach belieben anpassen.
-    #soll verhindern das kleinere Objekte wie Winde erkannt wird.
-    def separate_contours(self, min_area=10):
-        if not self.contours:
+
+    def filter_contours(self, min_area = MIN_AREA):
+        """Filters contours that are too small based on the min_area"""
+        if self.contours is None or len(self.contours) == 0:
             raise ValueError("Keine Konturen gefunden. Bitte zuerst find_contours() aufrufen.")
         
         filtered_contours = [c for c in self.contours if cv.contourArea(c) >= min_area]
-        self.contours = sorted(filtered_contours, key=cv.contourArea, reverse=True)
-        #Vier grösste Konturen
-        self.largest_contours = self.contours[:4]
-        self.puzzle_pieces = [Puzzle(cnt, i + 1) for i, cnt in enumerate(self.largest_contours)]
+        self.puzzle_pieces = [Puzzle(cnt, i + 1) for i, cnt in enumerate(filtered_contours)]
+        self.contours = filtered_contours
+        return filtered_contours
 
         
     def get_puzzle_pieces(self):

@@ -150,7 +150,7 @@ if __name__ == "__main__":
     detector = EdgeDetection(path)
     detector.load()
     detector.find_contours()
-    detector.separate_contours()
+    detector.filter_contours()
 
     puzzles = detector.get_puzzle_pieces()
     puzzle1 = puzzles[0]
