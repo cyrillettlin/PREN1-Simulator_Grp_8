@@ -12,16 +12,15 @@ class Puzzle:
         #CenterPoint
 
     def get_best_4_corners(self):
-        hull = cv.convexHull(self.contour)
+        peri = cv.arcLength(self.contour, True)
+        epsilon = 0.001 * peri # 0.02
+        approx = cv.approxPolyDP(self.contour, epsilon, True)
 
-        peri = cv.arcLength(hull, True)
-        epsilon = 0.02 * peri
-        approx = cv.approxPolyDP(hull, epsilon, True)
 
         # bei mehr als vier Ecken
         while len(approx) > 4 and epsilon < 0.1 * peri:
             epsilon += 0.01 * peri
-            approx = cv.approxPolyDP(hull, epsilon, True)
+            approx = cv.approxPolyDP(self.contour, epsilon, True)
 
         corners = [tuple(pt[0]) for pt in approx]
         return corners
