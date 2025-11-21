@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     # Rotation Demo/ Walktrough. This Demo Allgns Puzzle 1 with Puzzle 4. 
     ##Get Puzzles using EdgeDetection
-    path = "Data/best_example.jpg"
+    path = "Data/puzzle_selfmade.jpg"
     detector = EdgeDetection(path)
     detector.load()
     detector.find_contours()

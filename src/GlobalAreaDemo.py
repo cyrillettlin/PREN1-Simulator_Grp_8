@@ -4,9 +4,9 @@ import numpy as np
 from GlobalArea import GlobalArea
 
 #Set Image Path
-# path = "Data/Real-Puzzle.jpg"
-#path = "Data/Real-Puzzle_2.jpg"
-path = "Data/best_example.jpg"
+# path = "Data/puzzle_real_example_1.jpg"
+#path = "Data/puzzle_real_example_2.jpg"
+path = "Data/puzzle_selfmade.jpg"
 
 # Make Puzzles
 detector = EdgeDetection(path)
