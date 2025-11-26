@@ -4,7 +4,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 == Glossar
 
 
-
+//Am Ende generieren und anpassen lassen.
 
 
 [cols="e,2e" options="header"]

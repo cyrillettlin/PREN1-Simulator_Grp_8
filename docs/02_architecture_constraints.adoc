@@ -1,8 +1,29 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-architecture-constraints]]
-== Randbedingungen
+== Architecture Constraints (Randbedingungen)
+Dieses Kapitel beschreibt die Einschränkungen und Vorgaben, die bei der Entwicklung des **Simulators** als Teil-Funktionsmuster in der Konzeptphase (PREN 1) zwingend einzuhalten sind. Diese Bedingungen definieren den architektonischen Rahmen für die Software.
 
+=== Technische & Funktionale Randbedingungen
+Diese Vorgaben definieren, welche Funktionalität der Simulator abbilden und welche physikalischen Gegebenheiten er berücksichtigen muss.
 
+|===
+|*Randbedingung* |*Erläuterung*
+|Simulationsumfang |Der Simulator muss die kritischen Teilfunktionen der Aufgabe abbilden: **Objekterkennung (Standorterkennung)**, **Ausrichtung (Rotation/Translation)** und **korrekte Platzierung** des Puzzles.
+|Puzzle-Parameter |Zur Vereinfachung wird die Logik für die Verarbeitung von **4 Puzzleteilen** ausgelegt sein.
+|Kernfunktionen |Der Simulator muss die Berechnung der notwendigen **Drehung (Rotation)** und **Standortverschiebung (Translation)** durchführen können, um die Teile korrekt zu platzieren.
+|Autonomie-Nachweis |Die gesamte Simulationssequenz muss **autonom** ablaufen, um die Machbarkeit des Algorithmus ohne menschliches Eingreifen zu beweisen (Vorgabe: kein Netzwerk/Kommunikation während des Vorgangs).
+|Schnittstelle (Input) |Der Simulator verarbeitet **statische, vordefinierte Daten** des Puzzlebildes, das von der Gruppe festgelegt wurde. Die Aufgabe ist die Verarbeitung dieser Daten (Konturen, Standorte), nicht deren Live-Erfassung durch eine Kamera.
+|===
 
+=== Qualitäts- & Nachweis-Randbedingungen
+Diese Randbedingungen stellen sicher, dass der Simulator seinen Zweck als Risikominderungs-Tool für die spätere Hardware-Entwicklung erfüllt (PREN 2).
 
+|===
+|*Randbedingung* |*Erläuterung*
+|Validierung | Die Simulation muss einen **eindeutigen Beweis** für die Korrektheit **aller als kritisch eingestuften Teilfunktionen** (u.a. Objekterkennung, Platzierungslogik, Matching-Algorithmus) liefern, um die Risikominimierung zu belegen.
+|Verständlichkeit | Die Simulation muss die **Schritte des Algorithmus** und den **aktuellen Zustand** (z. B. *Compare -> Match -> Place*, *Placed: x/y*) für Außenstehende nachvollziehbar aufzeigen.
+|Übertragbarkeit | Der **Kern-Algorithmus** zur Objekterkennung, Platzierungslogik, Standorterkennung und Ausrichtung muss so implementiert werden, dass er weitgehend unabhängig von anderen Bestandteilen des Simulators ist und eine **Portierung** auf die Embedded-Plattform (PREN 2) vereinfacht.
+|Code-Qualität | Die Prinzipien und Praktiken von **Clean Code** und die **Objektorientierung** sind anzuwenden, um die interne Modularität, Wartbarkeit und die Zusammenarbeit im Team zu sichern.
+|Architekturdokumentation | Die Architekturbeschreibung des Simulators muss zwingend das **arc42-Format** verwenden.
+|===

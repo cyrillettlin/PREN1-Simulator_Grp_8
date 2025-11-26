@@ -2,32 +2,43 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-introduction-and-goals]]
 ==	Einführung und Ziele
+Das Modul PREN verlangt die Entwicklung eines autonomen Gerätes, das Puzzleteile erkennt, ausrichtet und platziert. Da in der Konzeptphase (PREN 1) noch kein physischer Prototyp des Gesamtgerätes zur Verfügung steht, soll ein Simulator entwickelt werden.
 
-
-
-
+Dieser Simulator dient als Software-Demonstrator, um die Machbarkeit der algorithmischen Lösungsansätze zu beweisen und Risiken für die spätere Umsetzung in PREN 2 zu minimieren.
 
 === Aufgabenstellung
+Die Hauptaufgabe dieses Simulators ist der Nachweis der Funktionalität der Objekterkennung, der Platzierungslogik sowie weiterer vom Team erkannten kritischen Teilfunktionen bevor Hardware gebaut wird.
 
+//!!!Anpassen nach Bedarf
 
+Der Simulator muss folgende Anforderungen erfüllen:
 
-
+* **Simulation des Puzzles:** Er muss Puzzleteile erkennen und virtuell abbilden können.
+* **Algorithmus-Validierung:** Er soll demonstrieren, wie die erkannten Teile korrekt zugeordnet werden ("Greedy Matching" oder ähnliche Ansätze).
+* **Standorterkennung:** Er soll jedem erkanntem Puzzleteil einen Standort zuweisen können.
+* **Ausrichtung:** Der Simulator soll eine entsprechende Drehung (Rotation) und Standortverschiebung (Translation) durchführen.
+* **Randbedingungen:** Die Simulation berücksichtigt die physikalischen Gegebenheiten wie die Startzone (A4) und die Ablagezone (A5 Rahmen).
 
 === Qualitätsziele
 
+Die Qualitätsziele leiten sich aus der Notwendigkeit ab, das technische Risiko für das spätere physische Gerät zu senken[cite: 101].
 
-
-
+[cols="1,1,2" options="header"]
+|===
+|Priorität |Qualitätsziel |Beschreibung
+| 1 | Funktionalität / Korrektheit | Der Simulator muss beweisen, dass der gewählte Algorithmus (z. B. Konturerkennung) fähig ist, das Puzzle autonom und korrekt zu lösen.
+| 2 | Verständlichkeit | Die Schritte des Algorithmus müssen für Außenstehende (Stakeholder) nachvollziehbar aufzeigt werden (z. B. "Compare -> Match -> Place").
+| 3 | Übertragbarkeit | Die Logik des Simulators muss so konzipiert sein, dass sie später auf den Mikrocontroller des realen Roboters portiert werden kann (Vorbereitung PREN 2).
+|===
 
 === Stakeholder
 
-
-
-
+Die Stakeholder sind die Personen und Gruppen, die ein direktes Interesse an der Funktionsfähigkeit und dem Nachweis durch den Simulator haben.
 
 [cols="1,1,2" options="header"]
 |===
 |Rolle |Kontakt |Erwartungshaltung
-| _<Rolle-1>_ | _<Kontakt-1>_ | _<Erwartung-1>_
-| _<Rolle-2>_ | _<Kontakt-2>_ | _<Erwartung-2>_ 
+| **Dozenten / Experten** | Thomas Gisler (Coach der Gruppe 8)  | Erwarten einen klaren Beweis (Proof of Concept), dass das Team eine funktionierende Lösung für die Objekterkennung und Platzierung sowie die weiteren kritischen Teilfunktionen erarbeitet hat. Sie bewerten die Risikominimierung.
+| **Software-Entwicklungsteam** | Studierende (Informatik) | Benötigen eine Testumgebung, um Algorithmen (z.B. Greedy Matching) ohne Hardware zu entwickeln und zu debuggen.
+| **PREN-Board** | HSLU T&A Bewertungsgremium | Achtet auf die Einhaltung der Wettbewerbsregeln (Autonomie, keine Kommunikation nach außen) und prüft, ob das Konzept tragfähig für PREN 2 ist.
 |===
