@@ -14,7 +14,6 @@ class Puzzle:
         self.area = cv.contourArea(contour)
         self.bounding_box = cv.boundingRect(contour)
         self.center_point = self.get_center_point()
-        #CenterPoint
 
     def get_best_4_corners(self):
 
@@ -64,14 +63,14 @@ class Puzzle:
         if n == 0 or len(corners) != 4:
             return [[], [], [], []]
 
-        # 1) Für jede Ecke Indices der Kontur nach Distanz sortiert
+        # Für jede Ecke Indices der Kontur nach Distanz sortiert
         corner_candidate_indices = []
         for c in corners:
             dists = np.linalg.norm(contour_pts - np.array(c), axis=1)
             sorted_idx = np.argsort(dists)
             corner_candidate_indices.append(list(sorted_idx))
 
-        # 2) Wähle für jede Ecke den nächstgelegenen, noch nicht verwendeten Index.
+        # Wähle für jede Ecke den nächstgelegenen, noch nicht verwendeten Index.
         used = set()
         assigned = [None] * 4
         for i in range(4):
@@ -102,8 +101,7 @@ class Puzzle:
                     # als letzten Ausweg benutze base (auch wenn bereits verwendet)
                     assigned[i] = int(base)
 
-        # 3) Wir haben jetzt für jede Ecke einen Index, aber die Reihenfolge der Ecken
-        #    (in corners) ist möglicherweise arbiträr. Sortiere Paare nach Konturindex.
+        # Wir haben jetzt für jede Ecke einen Index, aber die Reihenfolge der Ecken
         idx_corner_pairs = list(zip(assigned, corners))  # (index, (x,y))
         idx_corner_pairs.sort(key=lambda x: x[0])        # Kontur-Reihenfolge
 
@@ -118,7 +116,7 @@ class Puzzle:
             seg = [tuple(contour_pts[j % n]) for j in range(idx1, idx2 + 1)]
             segments.append(seg)
 
-        # 5) Validierung / Fallbacks:
+        # Validierung / Fallbacks:
         #    - Sehr kurze Segmente (z.B. < 3 Punkte) oder sehr lange (> 60% der Kontur)
         #      deuten auf Probleme; dann werden die betroffenen Segmente als Gerade
         #      zwischen den jeweiligen Ecken zurückgegeben.
@@ -141,7 +139,7 @@ class Puzzle:
             else:
                 validated_segments.append(seg)
 
-        # 6) Klassifiziere die 4 Segmente in top/right/bottom/left basierend auf Segmentmittelpunkt vs Centroid
+        # Klassifiziere die 4 Segmente in top/right/bottom/left basierend auf Segmentmittelpunkt vs Centroid
         cx, cy = self.center_point
         ordered = {"top": [], "right": [], "bottom": [], "left": []}
 
