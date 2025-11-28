@@ -1,0 +1,76 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-concepts]]
+== Architekturkonzepte
+
+Dieses Kapitel beschreibt die wichtigsten architektonischen Entscheidungen, die für die Realisierung des Simulators getroffen wurden, um die kritischen Teilfunktionen zu validieren und die Qualitätsziele zu erfüllen.
+
+=== 1. Trennung von Logik und reinen Simulatorbestandteilen (Core-Konzept)
+
+Das übergeordnete architektonische Konzept ist die strikte Trennung des Algorithmus-Kerns von den Ausgabefunktionen des Simulators. Dies adressiert direkt das Qualitätsziel der **Übertragbarkeit**.
+
+* **Konzept:** Separation of Concerns (Trennung der Belange).
+* **Ziel:** Der Kern-Algorithmus (**Core-Modul**) muss vollständig unabhängig von der Protokollierungs- und Aufzeichnungs-Logik sein, um eine einfache Portierung auf die Embedded-Plattform in PREN 2 zu ermöglichen.
+* **Umsetzung:**
+    * **Core-Modul:** Beinhaltet die gesamte Puzzle-Logik (Objekterkennung, Matching, Rotation/Translation-Berechnung).
+    * **Simulations-Modul:** Übernimmt die statische Datenaufnahme (**S-Input**) und die Bereitstellung des **S-Log**.
+
+---
+
+=== 2. Architekturprinzip (Objektorientierung)
+
+Die Implementierung des Simulators erfolgt strikt nach dem Paradigma der **Objektorientierung (OOP)**. Dies ist ein fundamentales Prinzip zur Einhaltung der Qualitätsziele **Wartbarkeit** und **Code-Qualität**.
+
+* **Ziel:** Verbesserung der internen Modularität, klarere Verantwortlichkeiten (Single Responsibility Principle) und einfachere **Zusammenarbeit im Projektteam**.
+* **Umsetzung:** Jede logische Entität (wie Puzzleteil oder  Matching Algorithmus) wird durch eine eigene Klasse abgebildet. Dies führt zu einer klaren **Kapselung** von Daten und Verhalten.
+
+---
+
+=== 3. Datenhaltung und Modellierung (Model-Konzept)
+
+Dieses Konzept wird direkt durch die OOP-Entscheidung umgesetzt.
+
+//Zustand noch in Projekt ergänzen
+
+* **Puzzleteil-Objekt:** Jedes Puzzleteil wird als **instanziierte Klasse** abgebildet. Dieses Objekt enthält:
+    * **Konturdaten:** Eine Liste von Punkten/Vektoren zur Definition der Geometrie.
+    * **Zustand:** Ein Status, z.B. *Unplatziert*, *In Bearbeitung*, *Platziert*.
+    * **Aktuelle Position:** Aktuelle Koordinaten (x, y) und Winkel (Rotation) im simulierten Raum.
+
+---
+
+=== 4. Kontroll- und Ablaufkonzept
+
+Da keine GUI existiert, wird die Steuerung über Konfiguration und Protokollierung realisiert, um die **Verständlichkeit** und den **Nachweis** zu gewährleisten.
+
+* **Konfigurationsgesteuerte Ausführung:** Die Startparameter werden über das definierte Eingabebild und Kommandozeilenargumente gesteuert.
+* **Detaillierte Protokollierung (S-Log):** Die Log-Funktion ersetzt die Echtzeit-Visualisierung. Der Algorithmus muss jeden diskreten, logischen Schritt (**Algorithm steps**) atomar in das Protokoll schreiben.
+* **Simulationszeit:** Es wird keine physikalische Echtzeit-Simulation durchgeführt. Die Ausführung ist **logisch-sequenziell**, wobei der *S-Log* die chronologische Abfolge beweist.
+
+---
+
+=== 5. Test- und Validierungskonzept (Qualitätsnachweis)
+
+Das Testkonzept ist zentral, um das Qualitätsziel der **Korrektheit** zu belegen und die **Risikominimierung** für alle kritischen Teilfunktionen nachzuweisen.
+
+//Integrationstest evtl. entfernen
+
+* **Unit Tests für den Algorithmus-Kern:**
+    * **Fokus:** Der gesamte **Core-Modul** (Matching-Logik, Rotations- und Translationsberechnung) muss durch automatisierte Unit Tests abgedeckt werden.
+    * **Ziel:** Nachweis der **funktionalen Korrektheit** unabhängig von den Simulatorbestandteilen.
+* **Integrationstests (Datenfluss):**
+    * **Fokus:** Überprüfung der Schnittstellen zwischen der **S-Input** (Datenquelle) und dem **Core-Modul**.
+    * **Ziel:** Sicherstellen, dass die statischen Input-Daten korrekt verarbeitet werden.
+* **Manueller Validierungstest (Log-basiert):**
+    * **Fokus:** Überprüfung der **Korrektheit** des gesamten Lösungsablaufs durch die Stakeholder.
+    * **Ablauf:** Der **S-Log** wird analysiert. Die ausgegebenen **Platzierungsanweisungen (S-Output: Rotation/Translation)** müssen manuell mit den Soll-Werten für das vordefinierte Puzzle verglichen werden. Der S-Log dient als primärer **Funktionsnachweis**.
+
+---
+
+=== 6. Protokollierungs- und Aufzeigungskonzept (Funktionsnachweis)
+
+Da keine Live-GUI existiert, ist die Protokollierung das primäre Medium für den Nachweis und die **Verständlichkeit**.
+
+* **S-Log als primäres Output:** Der Simulator muss den **S-Log** (Konsole/Log-Datei) als detailliertes Protokoll verwenden.
+* **Inhalt des Protokolls:** Das Protokoll muss alle Schritte enthalten, die zur Beantwortung der **Aufgabenstellung** relevant sind: Standorterkennung, Ergebnisse des Matching-Algorithmus (Match/No Match), und die finalen **Rotation**- und **Translation**-Werte für jedes platzierte Teil (S-Output).
+* **Statische Ergebnisaufzeichnung:** Zusätzlich zum S-Log kann das System am Ende der Simulation eine **statische Ergebnisdatei** (z. B. eine Texttabelle) generieren, die den **finalen Zustand** des Puzzles im Zielrahmen tabellarisch festhält.

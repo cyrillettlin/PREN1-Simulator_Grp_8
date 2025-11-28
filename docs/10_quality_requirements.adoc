@@ -1,0 +1,66 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-quality-scenarios]]
+== Qualitätsanforderungen
+
+Dieses Kapitel konkretisiert die definierten Qualitätsziele anhand von Qualitätsszenarien. Da der Simulator primär als *Proof of Concept* dient, stehen die Korrektheit der Algorithmen und die Nachvollziehbarkeit des Ablaufs im Vordergrund.
+
+=== Übersicht der Qualitätsanforderungen
+
+Die wichtigsten Qualitätsziele und die zugehörigen Arc42-Kategorien sind:
+
+|===
+|Qualitätsziel |Kategorie (ISO 25010) |Begründung (Fokus des Simulators)
+|**Korrektheit** (Priorität 1) |Funktionalitätsangemessenheit |Der Simulator muss beweisen, dass der Algorithmus die Aufgabe lösen kann.
+|**Verständlichkeit** (Priorität 2) |Benutzerfreundlichkeit / Auditierbarkeit |Der gesamte Lösungsweg muss rein durch den *S-Log* nachvollziehbar sein.
+|**Übertragbarkeit** (Priorität 3) |Portierbarkeit / Modularität |Die Kernlogik muss vom Simulationscode isoliert und auf die Embedded-Plattform portierbar sein.
+|**Wartbarkeit** |Modifizierbarkeit / Analysierbarkeit |Die objektorientierte Struktur und Clean Code müssen Änderungen erleichtern.
+|===
+
+=== Qualitätsszenarien
+
+Die folgenden Szenarien beschreiben die kritischsten Qualitätsanforderungen aus der Sicht der Stakeholder:
+
+==== 1. Korrektheit des Matching-Algorithmus (Proof of Concept)
+
+|===
+|**Typ** |Test-Szenario
+|**Quelle** |Dozenten, Informatikteam der Gruppe 8
+|**Stimulus** |Der Testfall mit den **4 vordefinierten Puzzleteilen** wird ausgeführt.
+|**Umgebung** |Simulator (Core-Modul) läuft in der Testumgebung (Unit Test).
+|**Reaktion** |Der Algorithmus berechnet für alle Puzzleteile die **korrekten Rotations- und Translationswerte** (S-Output).
+|**Messung** |Alle Unit Tests für die Matching-Logik laufen erfolgreich durch. Die berechneten S-Output-Werte stimmen exakt mit den manuell ermittelten Soll-Werten überein (Toleranz **0 mm** im logischen Modell).
+|===
+
+==== 2. Nachvollziehbarkeit des Lösungsablaufs (Verständlichkeit)
+
+|===
+|**Typ** |Szenario zur Betriebssicherheit
+|**Quelle** |Dozenten
+|**Stimulus** |Ein Stakeholder (Experte) analysiert den vollständigen Lösungsablauf des Simulators.
+|**Umgebung** |Analyse des generierten **S-Log-Protokolls**.
+|**Reaktion** |Der S-Log muss alle relevanten Schritte detailliert protokollieren (Input-Daten, Match-Entscheidungen, finale Platzierungsbefehle).
+|**Messung** |Die Nachvollziehbarkeit des gesamten Ablaufs bis zur Platzierung aller Teile ist **in maximal 4 Minuten** allein durch die Analyse des S-Logs möglich.
+|===
+
+==== 3. Trennung der Logik zur Portierung (Übertragbarkeit)
+
+|===
+|**Typ** |Entwicklungs-Szenario
+|**Quelle** |Informatikteam der Gruppe 8 
+|**Stimulus** |Die Kernlogik-Dateien sollen aus dem Simulator-Projekt isoliert werden, um sie für das Embedded System in PREN 2 vorzubereiten.
+|**Umgebung** |Quellcode des **Core-Moduls** wird in eine leere Projektstruktur kopiert.
+|**Reaktion** |Das Core-Modul ist direkt kompilierbar, ohne dass Code der reinen Simulatorbestandteile (S-Log, S-Input) entfernt oder modifiziert werden muss.
+|**Messung** |Die Zeit, die benötigt wird, um den Kern-Algorithmus aus dem Simulatorkontext zu isolieren und ihn erfolgreich mit **Dummy-Elementen** in der neuen Zielumgebung zu kompilieren und auszuführen, beträgt **maximal eine Stunde**.
+|===
+
+==== 4. Wartbarkeit (Erweiterung der Kernlogik)
+
+|===
+|**Typ** |Erweiterungs-Szenario
+|**Quelle** |Software-Entwicklungsteam
+|**Stimulus** |**Hypothetisch:** Es wird angenommen, die **simulierte Objekterkennung** muss durch eine komplexere, zuverlässigere Methode ersetzt werden, z.B. durch die Implementierung eines **Deep Learning**-Ansatzes, der aus erlernten Bilddaten die Konturen generiert.
+|**Umgebung** |Entwicklungsumgebung unter Anwendung des objektorientierten Designs (OOP).
+|**Reaktion** |Der neue Objekterkennungs-Ansatz kann als separate Klasse implementiert werden. Er muss lediglich das **definierte Output-Interface** (Ausgabe von Konturen, Standorten) einhalten. Das **Matching-Modul (Core-Logik)** und das **Simulations-Modul (S-Log)** dürfen keine Modifikationen erfordern.
+|**Messung** |Die Zeit, die benötigt wird, um den neuen Objekterkennungs-Ansatz zu integrieren und das System erfolgreich auszuführen, ohne Modifikationen an den **Core-Logik-Klassen** oder den **Simulations-Klassen** vornehmen zu müssen, beträgt **maximal 2 Stunden**.
+|===

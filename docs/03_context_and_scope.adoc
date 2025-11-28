@@ -1,0 +1,58 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-context-and-scope]]
+== Kontextabgrenzung
+Die Kontextabgrenzung definiert die **Systemgrenze** des Simulators und beschreibt, wie dieser mit seiner Umgebung interagiert. Der Simulator ist ein **Teilsystem** des Gesamtprojekts Produktentwicklung (PREN1 und PREN2)  und dient als *Proof of Concept* für die kritischen Lösungsalgorithmen.
+
+=== Fachlicher Kontext
+Der fachliche Kontext beschreibt die Rolle des Simulators innerhalb der Problemdomäne (Puzzle lösen) und seine Interaktion mit dem übergeordneten Zielsystem (dem physischen PREN 2 Gerät).
+
+**Diagramm und/oder Tabelle**
+
+Das folgende Diagramm zeigt die Einbettung des Simulators in den logischen Produktentwicklungszyklus, der durch die Notwendigkeit des Nachweises der kritischen Teilfunktionen bestimmt wird.
+
+
+|===
+|System (Fachlich) |Beziehung zum Simulator |Status
+|**PREN 2 Gesamtgerät** |Der Simulator ist das logische Vorbild für die Software des realen Roboters. |**Out of Scope** (Ist das Zielsystem, nicht das Simulationssystem.)
+|**Puzzleteile / Rahmen** |Das Problem, das gelöst werden muss (4–6 Teile, A5-Zielrahmen, A4-Startzone). |**Input-Spezifikation** (Beeinflusst die Regeln der Simulation.)
+|**Kritische Teilfunktionen** |Der Zweck des Simulators ist der Nachweis der Funktion dieser kritischen Algorithmen (z. B. Objekterkennung, Matching-Logik). |**Core Scope** (Liegt im Zentrum der Architektur.)
+|===
+
+**Erläuterung der externen fachlichen Schnittstellen**
+
+Die externen fachlichen Schnittstellen definieren die Art der Informationen, die das System verarbeitet und ausgibt:
+
+* **Puzzleteil-Input:** Daten, die die Geometrie und die simulierte Startposition der Puzzleteile beschreiben.
+* **Platzierungsanweisungen:** Die vom Simulator berechneten logischen Befehle (**Rotation** und **Translation**), die notwendig sind, um ein Puzzleteil korrekt abzulegen.
+
+---
+
+=== Technischer Kontext
+Der technische Kontext beschreibt die Systemgrenze des Simulators als Softwareanwendung und deren Interaktion mit den technischen Nutzern und Datensystemen.
+
+**Diagramm oder Tabelle**
+
+|===
+|System (Technisch) |Beziehung zum Simulator |Anforderung
+|**Anwender / Stakeholder** |Steuert und überwacht die Simulation über die Benutzerschnittstelle. |Der Simulator muss die Lösung der eingegebenen Puzzle aufzeigen.
+|**Vordefinierte Datenquelle** |Liefert die statischen Konturdaten des Puzzlebildes. |Der Simulator muss eine **S-Input** Schnittstelle zur Verarbeitung der statischen Daten implementieren.
+|**Entwicklungsumgebung** |Wird zur Entwicklung und zum Debugging des Algorithmus-Kerns genutzt. |Der Simulator-Code muss die Prinzipien von **Clean Code** zur einfachen Wartung erfüllen.
+|===
+
+**Erläuterung der externen technischen Schnittstellen**
+
+//Aufzeigen an mehreren Orten definiert -> evtl. anpassen nach Absprache
+
+* **S-UI (User Interface):** Die primäre Schnittstelle zur Interaktion mit den Stakeholdern. Sie zeigt den Algorithmus-Ablauf auf gibt den Zustand des Puzzles zurück.
+* **S-Input (Datenkanal):** Der Datenkanal, der die statischen, vordefinierten Puzzle-Input-Daten einliest (z. B. aus einer Datei).
+* **S-Output (Ergebniskanal):** Der Kanal, der die berechneten **Koordinaten (Translation)** und **Winkel (Rotation)** in einem definierten Format ausgibt.
+
+**Mapping fachliche auf technische Schnittstellen**
+
+|===
+|Fachliche Schnittstelle |Technische Schnittstelle |Beschreibung
+|Puzzleteil-Input |S-Input (Datenkanal) |Der technische Kanal, über den die vordefinierten Konturdaten in das System gelangen.
+|Platzierungsanweisungen |S-Output (Ergebniskanal) |Die Ausgabe der berechneten Rotation und Translation, dargestellt über die S-GUI und protokolliert im S-Log.
+|Funktionsnachweis |S-UI und S-Log |Das Aufzeigen der Algorithmen (S-UI) und die Protokollierung (S-Log) dienen als direkter Beweis für die Korrektheit der kritischen Teilfunktionen.
+|===
