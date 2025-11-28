@@ -1,3 +1,7 @@
+"""
+Detection of the puzzle piece
+"""
+
 from __future__ import print_function
 from puzzle import Puzzle
 

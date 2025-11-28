@@ -1,3 +1,8 @@
+"""
+This file contains the geometry and analysis function.
+"""
+
+
 import cv2 as cv
 import numpy as np
 
