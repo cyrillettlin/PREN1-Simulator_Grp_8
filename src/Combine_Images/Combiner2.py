@@ -1,38 +1,56 @@
 import cv2
+import numpy as np
 import os
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-img1_path = os.path.join(script_dir, "Images/Duo1.jpg")
-img2_path = os.path.join(script_dir, "Images/Duo2.jpg")
+#Aktuell beste Option muss jedoch punktgenau angrenzend sein.
 
-image_paths=[img1_path, img2_path]
-# initialized a list of images
-imgs = []
+def grid_2x3(images, target_width=400):
+    top = images[0:3]
+    bottom = images[3:6]
 
-for i in range(len(image_paths)):
-    imgs.append(cv2.imread(image_paths[i]))
-    imgs[i]=cv2.resize(imgs[i],(0,0),fx=0.4,fy=0.4)
-    # this is optional if your input images isn't too large
-    # you don't need to scale down the image
-    # in my case the input images are of dimensions 3000x1200
-    # and due to this the resultant image won't fit the screen
-    # scaling down the images 
-# showing the original pictures
-cv2.imshow('1',imgs[0])
-cv2.imshow('2',imgs[1])
+    def resize_row(row):
+        resized = []
+        for img in row:
+            h = int(img.shape[0] * target_width / img.shape[1])
+            resized.append(cv2.resize(img, (target_width, h)))
+        return np.hstack(resized)
 
-stitchy=cv2.Stitcher.create()
-(dummy,output)=stitchy.stitch(imgs)
+    top_row = resize_row(top)
+    bottom_row = resize_row(bottom)
 
-if dummy != cv2.STITCHER_OK:
-  # checking if the stitching procedure is successful
-  # .stitch() function returns a true value if stitching is 
-  # done successfully
-    print("stitching ain't successful")
-else: 
-    print('Your Panorama is ready!!!')
+    max_width = max(top_row.shape[1], bottom_row.shape[1])
 
-# final output
-cv2.imshow('final result',output)
-cv2.waitKey(0) #0 to exit
-cv2.destroyAllWindows()
+    def pad_to_width(img):
+        diff = max_width - img.shape[1]
+        if diff > 0:
+            return np.hstack([img, np.zeros((img.shape[0], diff, 3), dtype=img.dtype)])
+        return img
+
+    top_row = pad_to_width(top_row)
+    bottom_row = pad_to_width(bottom_row)
+
+    return np.vstack([top_row, bottom_row])
+
+
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    images_dir = os.path.join(script_dir, "Images")
+
+    order = [6, 5, 4, 3, 2, 1]
+    paths = [os.path.join(images_dir, f"Stiching_{i}.jpg") for i in order]
+
+    images = [cv2.imread(p) for p in paths]
+
+    for p, img in zip(paths, images):
+        if img is None:
+            print("Fehler beim Laden:", p)
+
+    grid = grid_2x3(images)
+
+    output_path = os.path.join(images_dir, "grid_output.jpg")
+    cv2.imwrite(output_path, grid)
+    print("Gespeichert als:", output_path)
+
+    cv2.imshow("Grid 6 5 4 / 3 2 1", grid)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
