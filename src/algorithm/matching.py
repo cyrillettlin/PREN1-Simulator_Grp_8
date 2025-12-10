@@ -45,7 +45,7 @@ class EdgeComparator:
             return False
         return EdgeComparator.compare_contour(edge_a, edge_b, contour_tolerance)
         logger.info(f"Edges matched: Length and Contour within tolerances.")
-        #TODO: Logging Rückgabe der passenden Puzzleteile, evtl. Kanten
+        #TODO: Logging Rückgabe der passenden Puzzleteile, evtl. Kanten.
 
 
 # PuzzleMatcher
