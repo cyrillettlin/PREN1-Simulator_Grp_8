@@ -3,6 +3,9 @@ Detection of the puzzle piece
 """
 
 from __future__ import print_function
+
+import dst
+
 from puzzle import Puzzle
 
 import os
@@ -33,6 +36,10 @@ class EdgeDetection:
         img_blur = cv.GaussianBlur(self.src_gray, (5,5), 0)
         _, img_thresh = cv.threshold(img_blur, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
 
+        # Bild für Zwischenschritte ausgeben
+        scaled_output = cv.resize(img_thresh, None, fx=0.4, fy=0.4, interpolation=cv.INTER_AREA)
+        cv.imshow('thresh, contours', scaled_output)
+
         contours, _ = cv.findContours(img_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         self.contours = contours
         return contours
@@ -44,6 +51,13 @@ class EdgeDetection:
             raise ValueError("Keine Konturen gefunden. Bitte zuerst find_contours() aufrufen.")
         
         filtered_contours = [c for c in self.contours if cv.contourArea(c) >= min_area]
+
+        # Bild für Zwischenschritte ausgeben
+        output = self.src.copy()
+        cv.drawContours(output, filtered_contours, -1, (0, 255, 0), 2)
+        scaled_output = cv.resize(output, None, fx=0.4, fy=0.4, interpolation=cv.INTER_AREA)
+        cv.imshow('filtered_contours', scaled_output)
+
         self.puzzle_pieces = [Puzzle(cnt, i + 1) for i, cnt in enumerate(filtered_contours)]
         self.contours = filtered_contours
         return filtered_contours
@@ -51,3 +65,4 @@ class EdgeDetection:
         
     def get_puzzle_pieces(self):
         return self.puzzle_pieces
+

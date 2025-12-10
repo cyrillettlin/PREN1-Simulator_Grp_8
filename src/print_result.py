@@ -2,6 +2,9 @@ from __future__ import print_function
 import cv2 as cv
 import numpy as np
 
+from src import edgedetection
+
+
 def print_result(self):
     """
     Zeigt die vom Puzzle-Objekt erkannten Edges (aus get_puzzle_edges)
@@ -35,9 +38,7 @@ def print_result(self):
                        (corner[0] + 5, corner[1] - 5),
                        cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
-    # Bild verkleinern für Übersicht
     scaled_output = cv.resize(output, None, fx=0.4, fy=0.4, interpolation=cv.INTER_AREA)
-
     cv.imshow("Detected Puzzle Edges", scaled_output)
     cv.waitKey(0)
     cv.destroyAllWindows()

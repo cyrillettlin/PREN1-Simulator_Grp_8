@@ -15,36 +15,41 @@ class Puzzle:
         self.bounding_box = cv.boundingRect(contour)
         self.center_point = self.get_center_point()
 
-    def get_best_4_corners(self):
+    def get_best_4_corners(self, epsilon_factor=0.00002):
+            # Kontur approximieren, um Rauschen zu reduzieren und echte Eckpunkte zu finden
+            # contour_arr = self.contour.reshape(-1, 2)
+            epsilon = epsilon_factor * cv.arcLength(self.contour, True)
+            approx = cv.approxPolyDP(self.contour, epsilon, True)
+            approx_arr = approx.reshape(-1, 2)
 
-            rect = cv.minAreaRect(self.contour)
+            rect = cv.minAreaRect(self.contour) #umschliesst die Form als Rechteck, Rechteck mit der kleinsten Fläche
             box = cv.boxPoints(rect)
             box = np.int32(box)
 
             # Kontur für Berechnungen flachklopfen (N, 2) statt (N, 1, 2)
-            contour_arr = self.contour.reshape(-1, 2)
-            
+            # contour_arr = self.contour.reshape(-1, 2)
+
             real_corners = []
 
             # Für jede der 4 Box-Ecken den nächstgelegenen Punkt auf der Kontur finden
             for box_point in box:
-                deltas = contour_arr - box_point
+                deltas = approx_arr - box_point
                 dists = np.linalg.norm(deltas, axis=1)
 
                 # Finde den Index des Minimums
                 min_idx = np.argmin(dists)
-                
+
                 # Füge den echten Konturpunkt hinzu
-                closest_point = tuple(contour_arr[min_idx])
+                closest_point = tuple(approx_arr[min_idx])
                 real_corners.append(closest_point)
 
-            
+
             real_corners = sorted(real_corners, key=lambda p: p[1]) # Erst nach Y sortieren
-            
+
             # Top-Gruppe (kleines Y) und Bottom-Gruppe (großes Y) unterscheiden
             top_group = sorted(real_corners[:2], key=lambda p: p[0]) # Nach X sortieren
             bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True) # Nach X sortieren (Reverse für Uhrzeigersinn)
-            
+
             sorted_corners = top_group + bottom_group
 
             return sorted_corners
