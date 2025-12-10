@@ -16,4 +16,5 @@ class TestContourComparison(unittest.TestCase):
 
         self.assertTrue(compare_contour(a, b))
         
-#TODO: weitere Tests hinzufügen
+#TODO: weitere Tests hinzufügen.
+# Pip install im Readme dokumentieren.
