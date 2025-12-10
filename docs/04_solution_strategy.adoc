@@ -1,9 +1,74 @@
-ifndef::imagesdir[:imagesdir: ../images]
+ifndef::imagesdir[:imagesdir: images]
 
 [[section-solution-strategy]]
 == Lösungsstrategie
 
-//Am Ende definieren
+Die Lösungsstrategie beschreibt den schrittweisen Ansatz zur autonomen Lösung des Puzzles, **wie er im Simulator implementiert ist**. Da der Simulator die physische Interaktion ersetzt, fokussiert sich die Strategie auf die **Software-Pipeline** zur Verarbeitung der Puzzledaten und zur Berechnung der Bewegungsbefehle (S-Output).
+
+Der Simulator startet mit **statischen Konturdaten** (S-Input). Die Software verfolgt eine logisch-sequenzielle Kette, um die kritischen Teilfunktionen zu validieren:
+
+1.  **Simulierte Objekterkennung:** Laden der Konturen und Bestimmung der Startpositionen.
+2.  **Kanten-Matching:** Vergleich der Kontursegmente zur Bestimmung der korrekten Anordnung.
+3.  **Bewegungsplanung:** Berechnung der Rotations- und Translationsbefehle (S-Output).
+
+
+image::sequence_diagram.png[align="center"]
+Abbildung: Lösung des Puzzles im Sequenzdiagramm.
+
+=== 1. Konturenerkennung (Simulierter Input)
+
+Dieses Modul im Simulator dient dazu, die **statisch geladenen Rohdaten** (Konturen, die eine reale Bildaufnahme repräsentieren) zu verarbeiten und in das interne, verarbeitbare Puzzleteil-Datenmodell (Sektion 4) zu überführen.
+
+* **Zweck:** Validierung der logischen Kette, die später für die Datenverarbeitung des Kamerasystems erforderlich ist.
+* **Logische Kette:** Der Simulator repliziert die notwendigen Schritte (Graustufenkonvertierung, Gaussian Blur, Thresholding), um aus den Rohdaten finale, saubere Konturen für die nachfolgende Logik zu erhalten.
+* **Output:** Generierung von **Puzzleteil-Objekten**, die ihre Kontur und simulierte Startposition enthalten.
+
+=== 2. Kantenseparation und Matching-Strategie
+
+Die erkannten Konturen müssen in einzelne, vergleichbare Kanten aufgeteilt werden. Die Architektur des Simulators muss verschiedene Ansätze unterstützen, um die Robustheit und Wartbarkeit zu demonstrieren.
+
+==== 2.1. Validierte Ansätze zur Kantenseparation
+
+Der Simulator ermöglicht die Implementierung und den Vergleich der folgenden Ansätze:
+
+|===
+|**Ansatz** |**Rolle im Simulator** |**Begründung**
+|**Ansatz 1: Eckenerkennung (Harris)** |**Test-Logik** |Zur schnellen Implementierung und Validierung der *nachfolgenden* Module (Kantenvergleich, Bewegungsplanung). Wird im finalen Lösungskonzept aufgrund systematischer Fehler verworfen.
+|**Ansatz 2: Iteratives Segment-Matching**|**Validierte Core-Logik** |Ein robuster, auf Konturvergleichen basierender Algorithmus, der das Problem der fehlerhaften Eckenerkennung umgeht und als Beweis für die Machbarkeit dient.
+|**Ansatz 3: Deep Learning (Konzept)** |**Architektonische Erweiterbarkeit** |Dient als Messlatte für die **Wartbarkeit** (Sektion 5). Der Simulator ist so konzipiert, dass ein komplexerer Ansatz (z.B. ein U-Net zur sauberen Kontursegmentierung) das aktuelle Modul ohne Änderungen an der Core-Matching-Logik ersetzen könnte.
+|===
+
+==== 2.2. Kantenvergleich
+
+Die Kanten aller Puzzleteile werden mittels eines **Brute-Force Algorithmus** verglichen.
+
+Alle möglichen Kantenpaare werden dabei abgeglichen, um die bestmögliche Übereinstimmung (Match) zu finden.
+Aufgrund der vordefinierten maximalen Anzahl von 6 Puzzleteilen ist der stark wachsende Rechenaufwand jedoch vertretbar.
+
+=== 3. Berechnung von Rotation und Translation (S-Output Generierung)
+
+Dieses Modul führt die kritische Risikominimierung durch, indem es die **exakten Bewegungsbefehle** für das spätere physische System generiert und protokolliert.
+
+==== 3.1. Koordinatensystem und Skalierung
+
+Der Simulator arbeitet mit einem virtuellen Koordinatensystem, das an die realen Abmessungen der A4-Startzone und des A5-Zielrahmens gebunden ist.
+
+* Die geladenen Konturdaten werden auf die korrekten **Skalierungsfaktoren** normiert.
+* Das System enthält nach diesem Schritt zwei Datensätze: die **Ausgangsposition** (ungelöst) und die **Endposition** (gelöst) im gleichen virtuellen Raum.
+
+==== 3.2. Berechnung der Rotation
+
+Die Rotation ist die Differenz im Winkel zwischen der aktuellen Orientierung des Puzzleteils und der benötigten Endorientierung im gelösten Zustand.
+
+* **Methode:** Bestimmung eines Referenzvektors für jedes Teil im ungelösten und gelösten Zustand.
+* **Resultat:** Berechnung des Rotationswinkels um den Flächenschwerpunkt.
+
+==== 3.3. Berechnung der Translation
+
+Die Translation ist die Distanz, die das Puzzleteil (nach der Rotation) verschoben werden muss, um seine finale Position zu erreichen.
+
+* **Methode:** Berechnung der Differenz der X- und Y-Koordinaten (Verschiebung) zwischen einem Referenzpunkt des ungelösten und des gelösten Puzzleteils.
+* **S-Output:** Die **Rotation und Translation** für jedes Teil werden als *S-Output* generiert und in den S-Log protokolliert (z.B. "Place Teil X: Rotate 45°, Translate (424, 40)").
 
 
 
