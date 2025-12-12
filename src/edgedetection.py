@@ -3,9 +3,6 @@ Detection of the puzzle piece
 """
 
 from __future__ import print_function
-
-import dst
-
 from puzzle import Puzzle
 
 import os

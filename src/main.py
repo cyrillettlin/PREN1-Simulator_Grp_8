@@ -1,12 +1,14 @@
 from edgedetection import EdgeDetection
 import os
 import print_result
+import cv2 as cv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # real example (black)
-# path = os.path.join(BASE_DIR, "../Data/puzzle_real_example_1.jpg")
-path = os.path.join(BASE_DIR, "../Data/puzzle_real_example_2.jpg")
+path = os.path.join(BASE_DIR, "../Data/puzzle_real_example_1.jpg")
+# path = os.path.join(BASE_DIR, "../Data/puzzle_real_example_2.jpg")
+# path = os.path.join(BASE_DIR, "../Data/puzzle_real_example_3.jpeg")
 
 # 3D puzzle, self-made (colored)
 # path = os.path.join(BASE_DIR, "../Data/puzzle_3d_1.jpg")
