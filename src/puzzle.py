@@ -14,6 +14,7 @@ class Puzzle:
         self.area = cv.contourArea(contour)
         self.bounding_box = cv.boundingRect(contour)
         self.center_point = self.get_center_point()
+        self.edges = []
 
     def get_best_4_corners(self, epsilon_factor=0.00002):
             # Kontur approximieren, um Rauschen zu reduzieren und echte Eckpunkte zu finden
@@ -57,7 +58,6 @@ class Puzzle:
     def get_puzzle_edges(self):
         """
         Robuste Extraktion der Kontursegmente zwischen den 4 Ecken.
-        Rückgabe: [top_edge, right_edge, bottom_edge, left_edge]
         Jede Edge ist eine Liste von (x,y)-Tupeln entlang der Kontur.
         """
         contour_pts = self.contour.reshape(-1, 2)
@@ -84,7 +84,7 @@ class Puzzle:
                     assigned[i] = int(idx)
                     used.add(idx)
                     break
-            # Falls alle nahe Indices bereits verwendet (sehr selten), suche mit Offset
+            # Falls alle nahe Indices bereits verwendet, suche mit Offset
             if assigned[i] is None:
                 # suche vorwärts/backwärts vom absolut nächstliegenden Index
                 base = corner_candidate_indices[i][0]
@@ -149,31 +149,35 @@ class Puzzle:
         ordered = {"top": [], "right": [], "bottom": [], "left": []}
 
         for seg in validated_segments:
-            if not seg:
-                continue
-            xs = [p[0] for p in seg]
-            ys = [p[1] for p in seg]
-            mx = sum(xs) / len(xs)
-            my = sum(ys) / len(ys)
-            dx = mx - cx
-            dy = my - cy
-            if abs(dx) > abs(dy):
-                if dx > 0:
-                    ordered["right"] = seg
+                if not seg:
+                    continue
+                xs = [p[0] for p in seg]
+                ys = [p[1] for p in seg]
+                mx = sum(xs) / len(xs)
+                my = sum(ys) / len(ys)
+                dx = mx - cx
+                dy = my - cy
+                if abs(dx) > abs(dy):
+                    if dx > 0:
+                        ordered["right"] = seg
+                    else:
+                        ordered["left"] = seg
                 else:
-                    ordered["left"] = seg
-            else:
-                if dy > 0:
-                    ordered["bottom"] = seg
-                else:
-                    ordered["top"] = seg
+                    if dy > 0:
+                        ordered["bottom"] = seg
+                    else:
+                        ordered["top"] = seg
 
-        return [
-            ordered.get("top", []),
-            ordered.get("right", []),
-            ordered.get("bottom", []),
-            ordered.get("left", [])
-        ]
+            # Zurückgeben als PuzzleEdge
+        edges = [
+                PuzzleEdge(ordered.get("top", []), "inner"),
+                PuzzleEdge(ordered.get("right", []), "inner"),
+                PuzzleEdge(ordered.get("bottom", []), "inner"),
+                PuzzleEdge(ordered.get("left", []), "inner"),
+            ]
+
+        self.edges = edges  # speichern für später
+        return edges
 
     
     def get_edges_from_corners(corners):

@@ -8,9 +8,10 @@ import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from typing import List, Tuple, Dict, Optional
-from PuzzleEdge import *
-from puzzle import puzzle
+from puzzle import Puzzle
+from edgedetection import EdgeDetection
 
+logging.basicConfig(level=logging.INFO)
 
 # EdgeComparator
 class EdgeComparator:
@@ -49,13 +50,12 @@ class EdgeComparator:
 
 
 # PuzzleMatcher
-# TODO: entfernen oder in Test verschieben.
 class PuzzleMatcher:
     """
     Findet mögliche Kanten-Matches zwischen mehreren Puzzleteilen.
     """
 
-    def __init__(self, pieces: List[puzzle]):
+    def __init__(self, pieces: List[Puzzle]):
         self.pieces = pieces
 
     def find_matches(self,
