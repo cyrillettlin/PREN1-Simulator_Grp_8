@@ -45,5 +45,9 @@ logging.info("Puzzle-Layout:")
 for row in grid:
     logging.info(f"  {row}")
 
+
 # Visualisierung im Raster
 Visualizer.show_all_edges_grid(pieces, image=detector.src)
+
+# Visualisierung aller gefundenen Matches
+Visualizer.show_matches(matches, pieces)
