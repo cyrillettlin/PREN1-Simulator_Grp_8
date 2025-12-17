@@ -23,10 +23,18 @@ def print_result(self):
         edges = piece.get_puzzle_edges()
 
         # --- Zeichne jede Edge mit eigener Farbe ---
-        for i, edge_points in enumerate(edges):
-            if edge_points and len(edge_points) > 1:
-                pts_array = np.array(edge_points, dtype=np.int32)
-                cv.polylines(output, [pts_array], isClosed=False, color=edge_colors[i % 4], thickness=2)
+    for i, edge in enumerate(edges):
+        pts = edge.get("points", [])
+        if pts and len(pts) > 1:
+            pts_array = np.array(pts, dtype=np.int32)
+            cv.polylines(
+                output,
+                [pts_array],
+                isClosed=False,
+                color=edge_colors[i % 4],
+                thickness=2
+            )
+
 
         # --- Ecken markieren ---
         corners = piece.get_best_4_corners()

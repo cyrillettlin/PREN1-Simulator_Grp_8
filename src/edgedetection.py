@@ -6,6 +6,7 @@ from __future__ import print_function
 from puzzle import Puzzle
 
 import os
+import numpy as np
 import cv2 as cv
 
 class EdgeDetection:
@@ -62,4 +63,37 @@ class EdgeDetection:
         
     def get_puzzle_pieces(self):
         return self.puzzle_pieces
+    
+    def show_all_edges(self):
+        """
+        Zeigt alle erkannten Kanten aller Puzzle-Teile farblich an.
+        """
+        colors = [
+            (0, 255, 255),  # top - gelb
+            (255, 0, 255),  # right - magenta
+            (255, 255, 0),  # bottom - cyan
+            (0, 165, 255)   # left - orange
+        ]
+
+        for piece in self.puzzle_pieces:
+            x, y, w, h = piece.bounding_box
+            canvas = np.zeros((h + 20, w + 20, 3), dtype=np.uint8)
+
+            edges = piece.get_puzzle_edges()
+            for i, edge in enumerate(edges):
+                pts = edge.get("points", [])
+                if pts:
+                    pts_rel = [(p[0]-x+10, p[1]-y+10) for p in pts]
+                    cv.polylines(canvas, [np.array(pts_rel, dtype=np.int32)], isClosed=False, color=colors[i % 4], thickness=2)
+
+            # Ecken markieren
+            corners = piece.get_best_4_corners()
+            for j, c in enumerate(corners):
+                cv.circle(canvas, (c[0]-x+10, c[1]-y+10), 5, (0, 255, 255), -1)
+                cv.putText(canvas, f"{j+1}", (c[0]-x+12, c[1]-y+5), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 1)
+
+            cv.imshow(f"Puzzle {piece.index} Edges", canvas)
+
+        cv.waitKey(0)
+        cv.destroyAllWindows()
 
