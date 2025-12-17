@@ -12,12 +12,13 @@ Hochschule Luzern - T&A, PREN I
 
 
 # Description
-Code for the simulator in PREN I. 
+Code for the simulator in PREN I.
 
 # Installation 🛠️
 - pip install opencv-python 
 - pip install numpy
 - pip install pytest
+- pip install unittest
 
 
 

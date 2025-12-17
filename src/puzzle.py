@@ -1,8 +1,3 @@
-"""
-This file contains the geometry and analysis function.
-"""
-
-
 import cv2 as cv
 import numpy as np
 
@@ -158,8 +153,7 @@ class Puzzle:
         else:
             return (0, 0)
     
-    
-
+    #Aktuell nicht verwendet, aber für Rotationtest notwendig
     def get_rotated_bounding_box(self):
 
         rect = cv.minAreaRect(self.contour)   

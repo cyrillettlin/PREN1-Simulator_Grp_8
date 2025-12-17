@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Dict
 from edgecomparator import EdgeComparator
 
-class PuzzleMatcher:
+class Matching:
 #Brute-Force Matcher für Puzzle-Kanten.
 
     def __init__(self, pieces: List):
