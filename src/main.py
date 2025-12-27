@@ -8,7 +8,7 @@ from matching import Matching
 from puzzleorganizer import PuzzleOrganizer
 from visualizer import Visualizer
 from GlobalArea import GlobalArea
-from src.Position_and_Rotation.Rotation import Rotation
+from Position_and_Rotation.Rotation import Rotation
 from Position_and_Rotation.Translation   import Translation
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
