@@ -1,7 +1,7 @@
-from edgedetection import EdgeDetection
+from ..edgedetection import EdgeDetection
 import matplotlib.pyplot as plt
 import numpy as np
-from GlobalArea import GlobalArea
+from src.GlobalArea import GlobalArea
 
 #Set Image Path
 # path = "Data/puzzle_real_example_1.jpg"
@@ -15,17 +15,18 @@ detector.find_contours()
 detector.filter_contours()
 
 #Optional, Show created contours.
-detector.show_result()
+# detector.show_result()
 
 # Get Puzzle Piceces.
 puzzles = detector.get_puzzle_pieces()
 #Instatntiate Global Area
 ga = GlobalArea()
 #Import the contours of the puzzle pieces.
-ga.set_contour(puzzles)
-# Scale the contours to the area of the 
-ga.scale_contours(0.20,0.20)
-ga.translate_contours(75,200)
+ga.set_unsolved_contours(puzzles)
+ga.set_solved_contours(puzzles)
+# Scale tcontourshe contours to the area of the 
+ga.scale_all_contours(0.20,0.20)
+ga.translate_unsolved_contours(75,200)
 ga.show()
 
 
