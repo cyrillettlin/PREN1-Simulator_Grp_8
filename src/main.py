@@ -54,29 +54,24 @@ for row in grid:
 
 
 
-corners = piece.get_best_4_corners()
-logging.info(f"Corners: {corners}")
 
-#Instatntiate Global Area
+
+#Instatntiate 
 ta = Translation()
 rot = Rotation()
-#Import the contours of the puzzle pieces.
 ga = GlobalArea()
-
 ga.set_unsolved_puzzles(pieces) 
 ga.set_solved_puzzles(pieces)
 
-
+#Scale and move unsolved pieces to match real world.
 ga.scale_all_puzzles(0.23, 0.23)
-ga.translate_unsolved_puzzles(120,200)
+ga.translate_unsolved_puzzles(80,190)
 
-#Solve the Puzzle!
-matches = sorted(matches, key=lambda m: float(m["piece_a"]))  #First Piece First
-#Translate piece 0 
-#rot.rotate_puzzle_in_place(ga.get_solved_puzzle_piece(0),165)
-#trans = ta.delta_xy(ga.get_solved_puzzle_piece(0).corners[0],[330,20])
-#
-#ta.translate_puzzle_in_place(ga.get_solved_puzzle_piece(0),trans)
+#Solve the Puzzle!-----------------------------------------
+#Sort matches to be moved in order.
+matches_resorted = sorted(matches, key=lambda m: float(m["piece_a"]))  #First Piece First
+
+#Find Flat edges of anchor piece to align with area_solved corner. 
 def classify_edge_points(edge_points, num_points=100):
     comp = EdgeComparator(edge_points, edge_points, num_points=num_points)
     norm = comp._normalize_geometry(comp.edge_a)
@@ -94,14 +89,14 @@ types = edge_types(piece)
 
 flat_edges = [i for i, t in types if t == "flat"]
 
-
+#Rotate and move anchor_piece to align with top-left corner. 
 anchor_piece = ga.get_solved_puzzle_piece(0)
 ang = rot.anchor_rotation_for_corner_deg(anchor_piece, flat_edges,(-1,0), (0,1))
 rot.rotate_puzzle_in_place(anchor_piece, ang)
 trans = ta.delta_xy(ga.get_solved_puzzle_piece(0).corners[0],[120,168])
-
 ta.translate_puzzle_in_place(ga.get_solved_puzzle_piece(0),trans)
 
+#Rotate and move the rest of the pieces to align with the anchor_piece. 
 if not matches:
     logging.warning("Keine Matches gefunden.")
 else:
@@ -112,20 +107,10 @@ else:
         ta.translate_piece_b_to_a_in_place(ga.get_solved_puzzle_piece(m['piece_b']-1),ga.get_matching_edge_lines(m['piece_a'],m['edge_a'],m['piece_b'],m['edge_b']))
 
 
-
-
-
-
-
-
-
-
-
-
 # Visualisierung im Raster  
-Visualizer.show_all_edges_grid(pieces, image=detector.src)
+#Visualizer.show_all_edges_grid(pieces, image=detector.src)
 
 # Visualisierung aller gefundenen Matches
-Visualizer.show_matches(matches, pieces)
+#Visualizer.show_matches(matches, pieces)
 #Show Solved Puzzle
 ga.show()

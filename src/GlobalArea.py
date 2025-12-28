@@ -175,27 +175,6 @@ class GlobalArea:
 
 
 
-    def _translate_corners(self, corners_list, dx: float, dy: float) -> None:
-        """
-        Translate corners by (dx, dy). Supports list-of-(4,2) or flat list of points.
-        """
-        if not corners_list:
-            return
-
-        def _translate(arr):
-            pts = np.asarray(arr, dtype=float).reshape(-1, 2)
-            pts[:, 0] += dx
-            pts[:, 1] += dy
-            return pts
-
-        # per-piece (recommended): [ (4,2), (4,2), ... ]
-        if np.asarray(corners_list[0]).ndim >= 2:
-            corners_list[:] = [_translate(c) for c in corners_list]
-        else:
-            # flat: (N,2)
-            corners_list[:] = _translate(corners_list)
-
-
     def translate_unsolved_puzzles(self, dx: float, dy: float) -> None:
         self._translate_puzzles(self.unsolved_puzzles, dx, dy)
 
@@ -231,6 +210,31 @@ class GlobalArea:
 
         return edge_line(piece_a, edge_a), edge_line(piece_b, edge_b)
 
+    def check_corners_in_area(self,rect, pieces, eps=1e-6):
+        '''
+        
+        :param rect: recxtangle area that should set the boundary. Solved or unsolved
+        :param pieces: Puzzle pieces for that boundary area. Solved or unsolved
+        :param eps: Amount that the coordinate can be off. 
+        '''
+        x_start, y_start, width, height = rect.x, rect.y, rect.w, rect.h
+        left_bound = x_start
+        right_bound = x_start+width
+        bottom_bound = y_start
+        top_bound = y_start + height
+        for pi, p in enumerate(pieces):
+            if not hasattr(p, "corners") or p.corners is None:
+                raise ValueError(f"Piece {pi} has no corners set")
+    
+            crns = np.asarray(p.corners, dtype=float).reshape(-1, 2)
+            for ci, (x, y) in enumerate(crns):
+                if x < left_bound - eps or x > right_bound + eps or y < bottom_bound - eps or y > top_bound + eps:
+                    # optional debug print:
+                    # print(f"Out of bounds: piece={pi}, corner={ci}, (x,y)=({x:.2f},{y:.2f})")
+                    return False
+    
+        return True
+                
 
 
     # ------------------------------------------------------------------
@@ -317,38 +321,3 @@ class GlobalArea:
         ax.set_title(title)
         plt.tight_layout()
         plt.show()
-
-
-'''
-    def scale_all_contours(self,ratio_x,ratio_y)-> None:
-        """
-        Scales the contours by the given Ratio.
-        Smaller Number makes it smaller. Larger makes larger.
-        """
-        scaled =[]
-        
-        ratio_x = ratio_x
-        ratio_y = ratio_y
-        for p in self.unsolved_puzzles:
-            pts = p.get_contour().reshape(-1, 2).astype(float)
-            pts = pts * [ratio_x, ratio_y]  # scale
-            p.set_contour(pts)
-        scaled =[]
-        for p in self.solved_puzzles:
-            pts = p.get_contour().reshape(-1, 2).astype(float)
-            pts = pts * [ratio_x, ratio_y]  # scale
-            p.set_contour(pts)
-            scaled.append(pts)
-
-'''
-
-if __name__ == "__main__":
-
-    
-    # Optional: you know that each camera pixel = 0.25 mm in both axes
-    pixels_to_mm_ratio = (0.25, 0.25)
-
-    ga = GlobalArea(pixels_to_mm_ratio=pixels_to_mm_ratio)
-
-    # Show the layout on the coordinate plane
-    ga.show(invert_y=False)
