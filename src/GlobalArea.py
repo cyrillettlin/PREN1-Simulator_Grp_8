@@ -297,14 +297,14 @@ class GlobalArea:
                 draw_labeled_contour(p, i, color='tab:orange', prefix="S")
         
         # Draw unsolved corners
-        if self.unsolved_puzzles:
-            for i, p in enumerate(self.unsolved_puzzles):
-                draw_corners(self,p, i, color="tab:purple", prefix="UC")
-        
-        # Draw solved corners
-        if self.unsolved_puzzles:
-            for i, p in enumerate(self.solved_puzzles):
-                draw_corners(self,p, i, color="tab:purple", prefix="SC")
+#        if self.unsolved_puzzles:
+#            for i, p in enumerate(self.unsolved_puzzles):
+#                draw_corners(self,p, i, color="tab:purple", prefix="UC")
+#        
+#        # Draw solved corners
+#        if self.unsolved_puzzles:
+#            for i, p in enumerate(self.solved_puzzles):
+#                draw_corners(self,p, i, color="tab:purple", prefix="SC")
 
         ax.set_xlim(self.base.x - margin, self.base.right + margin)
         ax.set_ylim(self.base.y - margin, self.base.bottom + margin)

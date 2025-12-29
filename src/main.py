@@ -91,10 +91,12 @@ flat_edges = [i for i, t in types if t == "flat"]
 
 #Rotate and move anchor_piece to align with top-left corner. 
 anchor_piece = ga.get_solved_puzzle_piece(0)
+
 ang = rot.anchor_rotation_for_corner_deg(anchor_piece, flat_edges,(-1,0), (0,1))
-rot.rotate_puzzle_in_place(anchor_piece, ang)
+#rot.rotate_puzzle_in_place(anchor_piece, ang)
+
 trans = ta.delta_xy(ga.get_solved_puzzle_piece(0).corners[0],[120,168])
-ta.translate_puzzle_in_place(ga.get_solved_puzzle_piece(0),trans)
+#ta.translate_puzzle_in_place(ga.get_solved_puzzle_piece(0),trans)
 
 #Rotate and move the rest of the pieces to align with the anchor_piece. 
 if not matches:

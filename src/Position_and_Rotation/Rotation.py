@@ -55,23 +55,23 @@ class Rotation:
     # ---------- rotation between lines ----------
     def compute_required_rotation_rad(self, line1, line2, parallel_mode="opposite"):
         """
-        Compute signed rotation (radians) needed to rotate line1same
+        Compute signed rotation (radians) needed to rotate line1 same
         so it becomes parallel to line2.
         """
         if parallel_mode not in {"any", "same", "opposite"}:
-            raise ValueError("parallel_mode must be 'any' or 'same'")
+            raise ValueError("parallel_mode must be 'any', 'same', or 'opposite'")
 
         t1 = self._unit_direction(line1)
         t2 = self._unit_direction(line2)
 
         delta_same = self.signed_angle(t1, t2)
+        delta_opposite = self.signed_angle(t1, -t2)
 
         if parallel_mode == "same":
             return delta_same
         if parallel_mode == "opposite":
-            return delta_same + math.pi
-
-        delta_opposite = self.signed_angle(t1, -t2)
+            return delta_opposite
+        #Return smallest angle
         return delta_same if abs(delta_same) <= abs(delta_opposite) else delta_opposite
 
     def compute_required_rotation_deg(self, lines, parallel_mode="opposite"):

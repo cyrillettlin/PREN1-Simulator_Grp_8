@@ -57,7 +57,7 @@ class Translation:
         lines: (lineA, lineB) from ga.get_matching_edge_lines(...)
                where lineA = (a0, a1) and lineB = (b0, b1)
 
-        By default aligns midpoints (robust). If use_midpoint=False, aligns first endpoints.
+        By default aligns midpoints (robust). If use_midpoint=False, aligns first endpoint with second endpoint.
         Returns (dx, dy) applied.
         """
         (a0, a1), (b0, b1) = lines
@@ -69,7 +69,7 @@ class Translation:
             b_ref = 0.5 * (b0 + b1)
         else:
             a_ref = a0
-            b_ref = b0
+            b_ref = b1
 
         dx, dy = (a_ref - b_ref)
         dx_f, dy_f = float(dx), float(dy)
