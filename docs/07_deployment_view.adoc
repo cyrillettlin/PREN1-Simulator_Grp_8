@@ -2,41 +2,6 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-deployment-view]]
 == Verteilungssicht
+Das Projekt kann heruntergeladen und über main.py gestartet werden.
 
-
-//Am Ende definieren
-
-
-=== Infrastruktur Ebene 1
-
-
-
-
-
-_**<Übersichtsdiagramm>**_
-
-Begründung:: _<Erläuternder Text>_
-
-Qualitäts- und/oder Leistungsmerkmale:: _<Erläuternder Text>_
-
-Zuordnung von Bausteinen zu Infrastruktur:: _<Beschreibung der Zuordnung>_
-
-=== Infrastruktur Ebene 2
-
-
-
-
-
-==== _<Infrastrukturelement 1>_
-
-_<Diagramm + Erläuterungen>_
-
-==== _<Infrastrukturelement 2>_
-
-_<Diagramm + Erläuterungen>_
-
-...
-
-==== _<Infrastrukturelement n>_
-
-_<Diagramm + Erläuterungen>_
+OpenCV, Numpy, Scipy und Matplotlib müssen installiert werden (pip install opencv-python numpy scipy matplotlib).

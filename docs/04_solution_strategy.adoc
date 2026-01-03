@@ -3,67 +3,72 @@ ifndef::imagesdir[:imagesdir: images]
 [[section-solution-strategy]]
 == Lösungsstrategie
 
-Die Lösungsstrategie beschreibt den schrittweisen Ansatz zur autonomen Lösung des Puzzles, **wie er im Simulator implementiert ist**. Da der Simulator die physische Interaktion ersetzt, fokussiert sich die Strategie auf die **Software-Pipeline** zur Verarbeitung der Puzzledaten und zur Berechnung der Bewegungsbefehle (S-Output).
+Dieses Kapitel beschreibt die grundlegende Lösungsstrategie der Softwarearchitektur für den Steckinator 3000.
+Die Software ist modular aufgebaut und folgt einer klar strukturierten Verarbeitungskette, welche vom Erfassen der
+Puzzleteile bis zur Berechnung der Roboterbewegungen reicht. Jeder Teilbereich ist funktional abgegrenzt und kann
+unabhängig getestet, angepasst oder erweitert werden. Zentrales Element zur Validierung der Lösungsstrategie ist ein
+Simulator, der die komplette Puzzle-Logik abbildet.
 
-Der Simulator startet mit **statischen Konturdaten** (S-Input). Die Software verfolgt eine logisch-sequenzielle Kette, um die kritischen Teilfunktionen zu validieren:
+=== Objekterkennung
 
-1.  **Simulierte Objekterkennung:** Laden der Konturen und Bestimmung der Startpositionen.
-2.  **Kanten-Matching:** Vergleich der Kontursegmente zur Bestimmung der korrekten Anordnung.
-3.  **Bewegungsplanung:** Berechnung der Rotations- und Translationsbefehle (S-Output).
+Die Objekterkennung ist der erste Verarbeitungsschritt der Software und dient dazu,
+die einzelnen Puzzleteile zuverlässig im Kamerabild zu identifizieren. Die Lösung basiert auf
+klassischer Bildverarbeitung mit OpenCV. Nach der Umwandlung des Kamerabildes in ein Graustufenbild
+werden Störungen durch Weichzeichnung reduziert und anschliessend mittels Binarisierung Vorder- und Hintergrund
+getrennt. Über eine Konturerkennung werden die Umrisse der Puzzleteile extrahiert. Kleine Störungen oder
+Artefakte werden über Flächenfilter verworfen. Das Ergebnis dieses Schrittes sind saubere Aussenkonturen
+aller erkannten Puzzleteile.
 
+=== Kantenseparation
 
-image::sequence_diagram.png[align="center"]
-Abbildung: Lösung des Puzzles im Sequenzdiagramm.
+Ziel der Kantenseparation ist es, die Konturen der Puzzleteile in einzelne, vergleichbare Kanten zu unterteilen.
+Dazu werden aus der Kontur stabile Eckpunkte bestimmt, welche als Trennstellen für die Kanten dienen.
+Die Kontur wird anschliessend in Segmente zerlegt und den jeweiligen Seiten des Puzzleteils zugeordnet.
+Dieser Schritt reduziert die Komplexität der Konturdaten und schafft die Grundlage für einen gezielten
+und strukturierten Kantenvergleich.
 
-=== 1. Konturenerkennung (Simulierter Input)
+=== Kantenvergleich (Matching)
 
-Dieses Modul im Simulator dient dazu, die **statisch geladenen Rohdaten** (Konturen, die eine reale Bildaufnahme repräsentieren) zu verarbeiten und in das interne, verarbeitbare Puzzleteil-Datenmodell (Sektion 4) zu überführen.
+Der Kantenvergleich dient dazu, passende Kantenpaare zwischen unterschiedlichen Puzzleteilen zu identifizieren.
+Hierfür werden alle relevanten Kanten geometrisch normalisiert, sodass sie unabhängig von Position, Rotation und
+Skalierung vergleichbar sind. Zusätzlich werden die Kanten grob typisiert (z. B. Puzzlenase, Einbuchtung oder
+flache Kante), um unplausible Vergleiche frühzeitig auszuschliessen. Der eigentliche Vergleich erfolgt über einen
+Brute-Force-Ansatz, welcher aufgrund der geringen Anzahl von Puzzleteilen performant genug ist. Das Ergebnis ist
+eine Liste von Kantenpaaren mit zugehörigen Übereinstimmungswerten.
 
-* **Zweck:** Validierung der logischen Kette, die später für die Datenverarbeitung des Kamerasystems erforderlich ist.
-* **Logische Kette:** Der Simulator repliziert die notwendigen Schritte (Graustufenkonvertierung, Gaussian Blur, Thresholding), um aus den Rohdaten finale, saubere Konturen für die nachfolgende Logik zu erhalten.
-* **Output:** Generierung von **Puzzleteil-Objekten**, die ihre Kontur und simulierte Startposition enthalten.
+=== Puzzle-Zusammensetzung
 
-=== 2. Kantenseparation und Matching-Strategie
+Basierend auf den ermittelten Kantenmatches werden die Puzzleteile virtuell zusammengesetzt.
+Ein geeignetes Eckteil dient dabei als Start- oder Ankerpunkt. Weitere Teile werden iterativ anhand der
+Matching-Beziehungen positioniert und ausgerichtet. Dieser Schritt erzeugt eine konsistente Zielanordnung
+aller Puzzleteile im gelösten Zustand, unabhängig von deren ursprünglicher Lage.
 
-Die erkannten Konturen müssen in einzelne, vergleichbare Kanten aufgeteilt werden. Die Architektur des Simulators muss verschiedene Ansätze unterstützen, um die Robustheit und Wartbarkeit zu demonstrieren.
+=== Koordinatensystem und Skalierung
 
-==== 2.1. Validierte Ansätze zur Kantenseparation
+Um virtuelle Berechnungen mit der realen Arbeitsfläche des Roboters zu verknüpfen, wird ein einheitliches
+Koordinatensystem eingeführt. Die aus der Bildverarbeitung gewonnenen Konturen werden skaliert und verschoben,
+sodass sie den realen Abmessungen des Spielfelds entsprechen. Dadurch können sowohl die Ausgangspositionen der
+Puzzleteile als auch deren Zielpositionen im selben Referenzsystem beschrieben werden.
 
-Der Simulator ermöglicht die Implementierung und den Vergleich der folgenden Ansätze:
-
-|===
-|**Ansatz** |**Rolle im Simulator** |**Begründung**
-|**Ansatz 1: Eckenerkennung (Harris)** |**Test-Logik** |Zur schnellen Implementierung und Validierung der *nachfolgenden* Module (Kantenvergleich, Bewegungsplanung). Wird im finalen Lösungskonzept aufgrund systematischer Fehler verworfen.
-|**Ansatz 2: Iteratives Segment-Matching**|**Validierte Core-Logik** |Ein robuster, auf Konturvergleichen basierender Algorithmus, der das Problem der fehlerhaften Eckenerkennung umgeht und als Beweis für die Machbarkeit dient.
-|**Ansatz 3: Deep Learning (Konzept)** |**Architektonische Erweiterbarkeit** |Dient als Messlatte für die **Wartbarkeit** (Sektion 5). Der Simulator ist so konzipiert, dass ein komplexerer Ansatz (z.B. ein U-Net zur sauberen Kontursegmentierung) das aktuelle Modul ohne Änderungen an der Core-Matching-Logik ersetzen könnte.
-|===
-
-==== 2.2. Kantenvergleich
-
-Die Kanten aller Puzzleteile werden mittels eines **Brute-Force Algorithmus** verglichen.
-
-Alle möglichen Kantenpaare werden dabei abgeglichen, um die bestmögliche Übereinstimmung (Match) zu finden.
-Aufgrund der vordefinierten maximalen Anzahl von 6 Puzzleteilen ist der stark wachsende Rechenaufwand jedoch vertretbar.
-
-=== 3. Berechnung von Rotation und Translation (S-Output Generierung)
+=== Berechnung von Rotation und Translation (S-Output Generierung)
 
 Dieses Modul führt die kritische Risikominimierung durch, indem es die **exakten Bewegungsbefehle** für das spätere physische System generiert und protokolliert.
 
-==== 3.1. Koordinatensystem und Skalierung
+==== Koordinatensystem und Skalierung
 
 Der Simulator arbeitet mit einem virtuellen Koordinatensystem, das an die realen Abmessungen der A4-Startzone und des A5-Zielrahmens gebunden ist.
 
 * Die geladenen Konturdaten werden auf die korrekten **Skalierungsfaktoren** normiert.
 * Das System enthält nach diesem Schritt zwei Datensätze: die **Ausgangsposition** (ungelöst) und die **Endposition** (gelöst) im gleichen virtuellen Raum.
 
-==== 3.2. Berechnung der Rotation
+==== Berechnung der Rotation
 
 Die Rotation ist die Differenz im Winkel zwischen der aktuellen Orientierung des Puzzleteils und der benötigten Endorientierung im gelösten Zustand.
 
 * **Methode:** Bestimmung eines Referenzvektors für jedes Teil im ungelösten und gelösten Zustand.
 * **Resultat:** Berechnung des Rotationswinkels um den Flächenschwerpunkt.
 
-==== 3.3. Berechnung der Translation
+==== Berechnung der Translation
 
 Die Translation ist die Distanz, die das Puzzleteil (nach der Rotation) verschoben werden muss, um seine finale Position zu erreichen.
 

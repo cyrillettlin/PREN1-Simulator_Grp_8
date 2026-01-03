@@ -1,9 +1,9 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-design-decisions]]
-== Architekturentscheidungen
 
 
 
 
-//Am Ende definieren
+
+//ist alles im Kapitel 08 concepts

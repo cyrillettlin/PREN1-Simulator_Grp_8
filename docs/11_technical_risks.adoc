@@ -3,6 +3,20 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-technical-risks]]
 == Risiken und technische Schulden
 
+In diesem Abschnitt werden die wesentlichen technischen Risiken der
+Softwarelösung beschrieben, welche die Funktionalität, Genauigkeit oder
+Robustheit des Gesamtsystems beeinträchtigen könnten.
 
-//Am Ende definieren
-
+|===
+| ID    | Risiko                                      | Beschreibung
+| TR-01 | Unzuverlässige Objekterkennung              | Die bildbasierte Objekterkennung ist abhängig von Beleuchtung, Kontrast und Bildqualität. Ungünstige Umgebungsbedingungen können dazu führen, dass Puzzleteile nicht oder nur teilweise erkannt werden.
+| TR-02 | Fehlerhafte Kantenseparation                | Die geometrische Trennung der Konturen in einzelne Kanten kann bei komplexen oder unregelmässigen Puzzleformen fehlerhaft sein, was zu falsch definierten Kanten führt.
+| TR-03 | Mehrdeutiges Kanten-Matching                | Ähnliche oder symmetrische Kantenformen können zu mehreren gleichwertigen Matching-Ergebnissen führen, wodurch das Puzzle falsch oder inkonsistent zusammengesetzt wird.
+| TR-04 | Falsche Puzzle-Zusammensetzung              | Fehler in der Matching-Logik oder in der Einordnung der Puzzleteile können dazu führen, dass eine inkorrekte Zielanordnung berechnet wird.
+| TR-05 | Ungenaue Rotationsberechnung                | Ungenauigkeiten in der Konturerkennung oder Eckpunktbestimmung können sich in einer fehlerhaften Berechnung der Rotationswinkel widerspiegeln.
+| TR-06 | Ungenaue Translationsberechnung             | Abweichungen im Koordinatensystem oder in der Skalierung können dazu führen, dass berechnete Verschiebungen nicht exakt mit der realen Position übereinstimmen.
+| TR-07 | Abweichung zwischen Simulation und Realität | Der Simulator bildet das reale System vereinfacht ab. Mechanische Toleranzen oder Kalibrierfehler können dazu führen, dass korrekt simulierte Bewegungen physisch nicht exakt umgesetzt werden.
+| TR-08 | Performance-Engpässe                        | Bildverarbeitung und Kantenvergleich können bei ungünstigen Parametern oder ineffizienter Implementierung zu erhöhten Rechenzeiten führen.
+| TR-09 | Schnittstelleninkonsistenzen                | Unklare oder inkonsistente Definitionen von Koordinaten, Einheiten oder Referenzpunkten zwischen Software und Hardware können zu fehlerhaften Bewegungen führen.
+| TR-10 | Eingeschränkte Skalierbarkeit               | Die gewählte Brute-Force-Strategie ist für kleine Puzzlegrössen geeignet, skaliert jedoch schlecht bei steigender Anzahl von Puzzleteilen oder höherer Komplexität.
+|===

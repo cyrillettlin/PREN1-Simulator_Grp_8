@@ -15,7 +15,7 @@ Das übergeordnete architektonische Konzept ist die strikte Trennung des Algorit
     * **Core-Modul:** Beinhaltet die gesamte Puzzle-Logik (Objekterkennung, Matching, Rotation/Translation-Berechnung).
     * **Simulations-Modul:** Übernimmt die statische Datenaufnahme (**S-Input**) und die Bereitstellung des **S-Log**.
 
----
+'''
 
 === 2. Architekturprinzip (Objektorientierung)
 
@@ -24,20 +24,18 @@ Die Implementierung des Simulators erfolgt strikt nach dem Paradigma der **Objek
 * **Ziel:** Verbesserung der internen Modularität, klarere Verantwortlichkeiten (Single Responsibility Principle) und einfachere **Zusammenarbeit im Projektteam**.
 * **Umsetzung:** Jede logische Entität (wie Puzzleteil oder  Matching Algorithmus) wird durch eine eigene Klasse abgebildet. Dies führt zu einer klaren **Kapselung** von Daten und Verhalten.
 
----
+'''
 
 === 3. Datenhaltung und Modellierung (Model-Konzept)
 
 Dieses Konzept wird direkt durch die OOP-Entscheidung umgesetzt.
 
-//Zustand noch in Projekt ergänzen
 
 * **Puzzleteil-Objekt:** Jedes Puzzleteil wird als **instanziierte Klasse** abgebildet. Dieses Objekt enthält:
     * **Konturdaten:** Eine Liste von Punkten/Vektoren zur Definition der Geometrie.
-    * **Zustand:** Ein Status, z.B. *Unplatziert*, *In Bearbeitung*, *Platziert*.
     * **Aktuelle Position:** Aktuelle Koordinaten (x, y) und Winkel (Rotation) im simulierten Raum.
 
----
+'''
 
 === 4. Kontroll- und Ablaufkonzept
 
@@ -47,25 +45,20 @@ Da keine GUI existiert, wird die Steuerung über Konfiguration und Protokollieru
 * **Detaillierte Protokollierung (S-Log):** Die Log-Funktion ersetzt die Echtzeit-Visualisierung. Der Algorithmus muss jeden diskreten, logischen Schritt (**Algorithm steps**) atomar in das Protokoll schreiben.
 * **Simulationszeit:** Es wird keine physikalische Echtzeit-Simulation durchgeführt. Die Ausführung ist **logisch-sequenziell**, wobei der *S-Log* die chronologische Abfolge beweist.
 
----
+'''
 
 === 5. Test- und Validierungskonzept (Qualitätsnachweis)
 
 Das Testkonzept ist zentral, um das Qualitätsziel der **Korrektheit** zu belegen und die **Risikominimierung** für alle kritischen Teilfunktionen nachzuweisen.
 
-//Integrationstest evtl. entfernen
-
 * **Unit Tests für den Algorithmus-Kern:**
     * **Fokus:** Der gesamte **Core-Modul** (Matching-Logik, Rotations- und Translationsberechnung) muss durch automatisierte Unit Tests abgedeckt werden.
     * **Ziel:** Nachweis der **funktionalen Korrektheit** unabhängig von den Simulatorbestandteilen.
-* **Integrationstests (Datenfluss):**
-    * **Fokus:** Überprüfung der Schnittstellen zwischen der **S-Input** (Datenquelle) und dem **Core-Modul**.
-    * **Ziel:** Sicherstellen, dass die statischen Input-Daten korrekt verarbeitet werden.
 * **Manueller Validierungstest (Log-basiert):**
     * **Fokus:** Überprüfung der **Korrektheit** des gesamten Lösungsablaufs durch die Stakeholder.
     * **Ablauf:** Der **S-Log** wird analysiert. Die ausgegebenen **Platzierungsanweisungen (S-Output: Rotation/Translation)** müssen manuell mit den Soll-Werten für das vordefinierte Puzzle verglichen werden. Der S-Log dient als primärer **Funktionsnachweis**.
 
----
+'''
 
 === 6. Protokollierungs- und Aufzeigungskonzept (Funktionsnachweis)
 

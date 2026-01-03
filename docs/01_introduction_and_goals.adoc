@@ -9,8 +9,6 @@ Dieser Simulator dient als Software-Demonstrator, um die Machbarkeit der algorit
 === Aufgabenstellung
 Die Hauptaufgabe dieses Simulators ist der Nachweis der Funktionalität der Objekterkennung, der Platzierungslogik sowie weiterer vom Team erkannten kritischen Teilfunktionen bevor Hardware gebaut wird.
 
-//!!!Anpassen nach Bedarf
-
 Der Simulator muss folgende Anforderungen erfüllen:
 
 * **Simulation des Puzzles:** Er muss Puzzleteile erkennen und virtuell abbilden können.
@@ -21,7 +19,7 @@ Der Simulator muss folgende Anforderungen erfüllen:
 
 === Qualitätsziele
 
-Die Qualitätsziele leiten sich aus der Notwendigkeit ab, das technische Risiko für das spätere physische Gerät zu senken[cite: 101].
+Die Qualitätsziele leiten sich aus der Notwendigkeit ab, das technische Risiko für das spätere physische Gerät zu senken.
 
 [cols="1,1,2" options="header"]
 |===
