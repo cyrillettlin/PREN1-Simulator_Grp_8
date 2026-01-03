@@ -2,14 +2,15 @@ import os
 import logging
 import numpy as np
 from edgedetection import EdgeDetection
-from edgecomparator import EdgeComparator
-from puzzle import Puzzle
 from matching import Matching
 from puzzleorganizer import PuzzleOrganizer
 from visualizer import Visualizer
 from GlobalArea import GlobalArea
 from Position_and_Rotation.Rotation import Rotation
 from Position_and_Rotation.Translation   import Translation
+from FlatEdgeFinder import FlatEdgeFinder
+from Anchor import Anchor
+from MatchPlacer import MatchPlacer
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
@@ -62,52 +63,39 @@ rot = Rotation()
 ga = GlobalArea()
 ga.set_unsolved_puzzles(pieces) 
 ga.set_solved_puzzles(pieces)
-#Scale and move unsolved pieces to match real world.
+
+
+
+# --- new helpers ---
+flat_finder = FlatEdgeFinder(num_points=100, logger=logging.getLogger("FlatEdgeFinder"))
+anchor = Anchor(flat_finder=flat_finder, rot=rot, ta=ta, logger=logging.getLogger("Anchor"))
+match_placer = MatchPlacer(ga=ga, rot=rot, ta=ta, logger=logging.getLogger("MatchPlacer"))
+
+# optional debug
+flat_finder.log_edge_types(pieces)
+
+# choose anchor + get its flat edges
+
+anchor_piece, flat_edges = anchor.choose_anchor(ga.solved_puzzles)
+#Scale and move unsolved pieces to match real world. This Needs to be done BEItFORE the Pieces are scaled. 
+#Otherwise the logic of identifying Puzzle edges would not work anymore. 
 ga.scale_all_puzzles(0.23, 0.23)
-#ga.scale_all_puzzles(0.4, 0.4)
 ga.translate_unsolved_puzzles(80,190)
 
 
-#Solve the Puzzle!-----------------------------------------
-#Sort matches to be moved in order.
-matches_resorted = sorted(matches, key=lambda m: float(m["piece_a"]))  #First Piece First
+# Example: top-left directions & point computed from GlobalArea
 
-#Find Flat edges of anchor piece to align with area_solved corner. 
-def classify_edge_points(edge_points, num_points=100):
-    comp = EdgeComparator(edge_points, edge_points, num_points=num_points)
-    norm = comp._normalize_geometry(comp.edge_a)
-    res  = comp._resample_edge(norm)
-    return comp.get_edge_type(res)
+target_corner_point = [ga.area_solved.x, ga.area_solved.y + ga.area_solved.h]
 
-def edge_types(piece):
-    piece.get_puzzle_edges()
-    return [(i, classify_edge_points(e["points"])) for i, e in enumerate(piece.edges)]
+# choose corner directions/target point
+ang, dxdy = anchor.place_anchor(anchor_piece, flat_edges, (1,0), (0,1), target_corner_point)
 
-for p in pieces:
-    logging.info(f"Piece {p.index} edge types: {edge_types(p)}")
-types = edge_types(piece)  
-# e.g. [(0,'flat'), (1,'tab'), (2,'hole'), (3,'flat')]
 
-flat_edges = [i for i, t in types if t == "flat"]
+# apply matches
+matches_resorted = sorted(matches, key=lambda m: float(m["piece_a"]))
+match_placer.apply_matches(matches_resorted)
 
-#Rotate and move anchor_piece to align with top-left corner. 
-anchor_piece = ga.get_solved_puzzle_piece(0)
 
-ang = rot.anchor_rotation_for_corner_deg(anchor_piece, flat_edges,(-1,0), (0,1))
-rot.rotate_puzzle_in_place(anchor_piece, ang)
-
-trans = ta.delta_xy(ga.get_solved_puzzle_piece(0).corners[0],[120,168])
-ta.translate_puzzle_in_place(ga.get_solved_puzzle_piece(0),trans)
-
-#Rotate and move the rest of the pieces to align with the anchor_piece. 
-if not matches_resorted:
-    logging.warning("Keine Matches gefunden.")
-else:
-    for m in matches_resorted:
-        req_rot = rot.compute_required_rotation_deg(ga.get_matching_edge_lines(m['piece_a'],m['edge_a'],m['piece_b'],m['edge_b']))
-        logging.info(f"Required Rotation: {req_rot}")
-        rot.rotate_puzzle_in_place(ga.get_solved_puzzle_piece(m['piece_b']-1),req_rot)
-        ta.translate_piece_b_to_a_in_place(ga.get_solved_puzzle_piece(m['piece_b']-1),ga.get_matching_edge_lines(m['piece_a'],m['edge_a'],m['piece_b'],m['edge_b']))
 
 
 # Visualisierung im Raster  

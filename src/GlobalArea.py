@@ -210,31 +210,6 @@ class GlobalArea:
 
         return edge_line(piece_a, edge_a), edge_line(piece_b, edge_b)
 
-    def check_corners_in_area(self,rect, pieces, eps=1e-6):
-        '''
-        
-        :param rect: recxtangle area that should set the boundary. Solved or unsolved
-        :param pieces: Puzzle pieces for that boundary area. Solved or unsolved
-        :param eps: Amount that the coordinate can be off. 
-        '''
-        x_start, y_start, width, height = rect.x, rect.y, rect.w, rect.h
-        left_bound = x_start
-        right_bound = x_start+width
-        bottom_bound = y_start
-        top_bound = y_start + height
-        for pi, p in enumerate(pieces):
-            if not hasattr(p, "corners") or p.corners is None:
-                raise ValueError(f"Piece {pi} has no corners set")
-    
-            crns = np.asarray(p.corners, dtype=float).reshape(-1, 2)
-            for ci, (x, y) in enumerate(crns):
-                if x < left_bound - eps or x > right_bound + eps or y < bottom_bound - eps or y > top_bound + eps:
-                    # optional debug print:
-                    # print(f"Out of bounds: piece={pi}, corner={ci}, (x,y)=({x:.2f},{y:.2f})")
-                    return False
-    
-        return True
-                
 
 
     # ------------------------------------------------------------------
