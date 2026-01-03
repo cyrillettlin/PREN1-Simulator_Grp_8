@@ -9,7 +9,7 @@ Der fachliche Kontext beschreibt die Rolle des Simulators innerhalb der Problemd
 
 Das folgende Diagramm zeigt die Einbettung des Simulators in den logischen Produktentwicklungszyklus, der durch die Notwendigkeit des Nachweises der kritischen Teilfunktionen bestimmt wird.
 
-image::Kontextdiagramm.svg[align="center"]
+image::Kontextdiagramm.png[align="center"]
 Abbildung: Kontextdiagramm
 
 |===

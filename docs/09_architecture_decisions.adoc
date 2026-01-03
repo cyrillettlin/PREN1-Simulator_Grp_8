@@ -1,9 +1,29 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-design-decisions]]
+== Architekturentscheidungen
+Dieses Kapitel dokumentiert die wesentlichen Architektur- und Implementationsentscheide des Simulators.
 
+=== ADR-01 Bildverarbeitung mit OpenCV
+* Kontext: Die Objekterkennung basiert auf einem statischen Puzzlebild, das Konturen liefern muss.
+* Entscheidung: Einsatz von OpenCV für Graustufen, Binarisierung und Konturerkennung.
+* Begründung: Bewährte Bibliothek, stabile Ergebnisse, geringe Implementationszeit.
+* Konsequenzen: Abhängigkeit von OpenCV, Parameter müssen für das Bildmaterial abgestimmt werden.
 
+=== ADR-02 Heuristisches Kanten-Matching mit Schwellwert
+* Kontext: Puzzlekanten müssen robust miteinander verglichen werden.
+* Entscheidung: Matching mit Score und festem Schwellwert (Greedy-Auswahl der besten Treffer).
+* Begründung: Einfach, nachvollziehbar und für 4 Teile ausreichend schnell.
+* Konsequenzen: Risiko für Mehrdeutigkeiten, Skalierung für grössere Puzzles begrenzt.
 
+=== ADR-03 Trennung von Core-Logik und Simulation
+* Kontext: Der Algorithmus soll später auf eine Embedded-Plattform portierbar sein.
+* Entscheidung: Kernlogik (Matching, Rotation, Translation) bleibt modular und von UI/Log getrennt.
+* Begründung: Erleichtert Portierung in PREN 2 und gezielte Unit Tests.
+* Konsequenzen: Mehr Schnittstellen, klare Datenstrukturen nötig.
 
-
-//ist alles im Kapitel 08 concepts
+=== ADR-04 Log-basierter Funktionsnachweis
+* Kontext: Kein physischer Roboter verfügbar, Funktionsnachweis nur simuliert möglich.
+* Entscheidung: Detaillierte Protokollierung als primärer Nachweis der Ablaufkette.
+* Begründung: Stakeholder können Ablauf und Ergebnisse nachvollziehen.
+* Konsequenzen: Logging muss konsistent und vollständig sein.

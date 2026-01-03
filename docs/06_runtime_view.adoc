@@ -5,57 +5,5 @@ ifndef::imagesdir[:imagesdir: images]
 Das nachfolgende Diagramm zeigt die Laufzeitsicht des Simulators.
 
 
-[plantuml, Sequenzdiagramm, svg]
-----
-@startuml
-actor User
-participant "main.py" as Main
-participant EdgeDetection
-participant PuzzlePiece
-participant Matching
-participant PuzzleOrganizer
-participant FlatEdgeFinder
-participant Anchor
-participant Rotation
-participant Translation
-participant MatchPlacer
-participant GlobalArea
-
-User -> Main: Programm starten
-
-Main -> EdgeDetection: load()
-Main -> EdgeDetection: find_contours()
-Main -> EdgeDetection: filter_contours()
-Main -> EdgeDetection: get_puzzle_pieces()
-
-loop für jedes Puzzleteil
-    Main -> PuzzlePiece: get_puzzle_edges()
-end
-
-Main -> Matching: find_matches(threshold)
-Matching --> Main: Match-Liste
-
-Main -> PuzzleOrganizer: organize()
-
-Main -> GlobalArea: set_unsolved_puzzles()
-Main -> GlobalArea: set_solved_puzzles()
-
-Main -> FlatEdgeFinder: log_edge_types()
-Main -> Anchor: choose_anchor()
-Anchor -> FlatEdgeFinder: finde flache Kanten
-Anchor --> Main: Anchor + Kanten
-
-Main -> GlobalArea: scale_all_puzzles()
-Main -> GlobalArea: translate_unsolved_puzzles()
-
-Main -> Anchor: place_anchor()
-Anchor -> Rotation: rotate()
-Anchor -> Translation: translate()
-
-Main -> MatchPlacer: apply_matches()
-MatchPlacer -> Rotation: rotate()
-MatchPlacer -> Translation: translate()
-
-Main -> GlobalArea: show()
-@enduml
-----
+image::Sequenzdiagramm.png[align="center"]
+Abbildung: UML-Diagramm

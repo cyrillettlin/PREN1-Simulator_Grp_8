@@ -3,14 +3,37 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-glossary]]
 == Glossar
 
-
-//Am Ende generieren und anpassen lassen.
-
-
 [cols="e,2e" options="header"]
 |===
 |Begriff |Definition
 
 |OpenCV
-|Open Source Bildverarbeitungsframework
-|===
+|Open Source Bildverarbeitungsframework für Konturerkennung und Filterung.
+
+|PuzzlePiece
+|Repr?sentiert ein einzelnes Puzzleteil mit Kontur und Kanten.
+
+|PuzzleEdge
+|Eine Kante eines Puzzleteils mit Punkten und Typ (innen, aussen, flach).
+
+|Matching
+|Algorithmus, der kompatible Kantenpaare anhand eines Scores bestimmt.
+
+|Rotation
+|Berechnung des Rotationswinkels zur korrekten Ausrichtung eines Teils.
+
+|Translation
+|Berechnung der Verschiebung im Koordinatensystem.
+
+|Anchor
+|Referenzteil mit flachen Kanten zur initialen Ausrichtung im Zielrahmen.
+
+|FlatEdgeFinder
+|Hilfskomponente zur Identifikation flacher Kanten.
+
+|GlobalArea
+|Container für gelöste/ungelöste Teile und Zielbereich im Koordinatensystem.
+
+|S-Log
+|Protokollierung des Simulationsablaufs als Nachweis der Funktionskette.
+|=== 
