@@ -10,6 +10,14 @@ class Puzzle:
         self.bounding_box = cv.boundingRect(contour)
         self.center_point = self.get_center_point()
         self.edges = []
+        self.corners = []
+        
+
+    def get_contour(self):
+        return self.contour
+    
+    def set_contour(self,cnt):
+        self.contour =cnt
 
     def get_best_4_corners(self, epsilon_factor=0.00002):
             #Rauschen reduzieren

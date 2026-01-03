@@ -1,71 +1,99 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import math 
 import cv2 as cv
+from collections import deque
+from typing import Any, Dict, List, Set
 
-# Class can be much smaller without the demo methods and optional same/any.
 class Rotation:
-    def __init__(self, line1, line2, parallel_mode = "same"):
-        self.p1a = np.asarray(line1[0], dtype=float)
-        self.p1b = np.asarray(line1[1], dtype=float)
-        self.p2a = np.asarray(line2[0], dtype=float)
-        self.p2b = np.asarray(line2[1], dtype=float)
-        if parallel_mode not in {"any", "same"}:
-            raise ValueError("parallel_mode must be 'any' or 'same'")
-        self.parallel_mode = parallel_mode
-        # Define two vectors
-        v1 = self.p1b - self.p1a
-        v2 = self.p2b - self.p2a
-        #Calculate the lenth of the vectors
-        n1, n2 = np.linalg.norm(v1), np.linalg.norm(v2)
-        if n1 == 0 or n2 == 0:
-            raise ValueError("Lines must have non-zero length.")
-        #Make vectors the same lenght.
-        self.t1 = v1 / n1
-        self.t2 = v2 / n2
+    """
+    Rotation utilities.
+    No parameters required at instantiation.
+    Lines and contours are passed directly to methods.
+    """
 
-        # Precompute the required rotation
-        self._rotation_rad = self._compute_required_rotation()
+    def __init__(self):
+        pass
 
-        # Calculates the amount of rotation needed for the Vecors to point in the same direction. 
-        # Signed angle u->v (in (-pi, pi])
+    # ---------- helpers ----------
+    def _unit_direction(self, obj):
+        """
+        Return unit direction vector (2,) from either:
+        - a line given by 2 endpoints: shape (2,2) or (2,1,2)
+        - a direction vector: shape (2,)
+        """
+        a = np.asarray(obj, dtype=np.float64)
+
+        # Case 1: direction vector (2,)
+        if a.shape == (2,):
+            v = a
+
+        # Case 2: endpoints (2,2)
+        elif a.shape == (2, 2):
+            v = a[1] - a[0]
+
+        # Case 3: OpenCV style endpoints (2,1,2)
+        elif a.shape == (2, 1, 2):
+            v = a[1, 0] - a[0, 0]
+
+        else:
+            raise ValueError(f"_unit_direction: expected (2,), (2,2), or (2,1,2), got {a.shape}")
+
+        n = np.linalg.norm(v)
+        if n < 1e-12:
+            raise ValueError("_unit_direction: zero-length direction")
+        return v / n
+
+
     def signed_angle(self, u, v):
         """Return signed angle (radians) to rotate u → v, range (-π, π]."""
-        cross_z = u[0]*v[1] - u[1]*v[0]   # equivalent to determinant |u v|
-        dot     = u[0]*v[0] + u[1]*v[1]
+        u = np.asarray(u, dtype=float)
+        v = np.asarray(v, dtype=float)
+        cross_z = u[0] * v[1] - u[1] * v[0]
+        dot = u[0] * v[0] + u[1] * v[1]
         return np.arctan2(cross_z, dot)
-        
 
-    def _compute_required_rotation(self):
-        """Compute how much line1 must rotate to align with line2."""
-        delta_same = self.signed_angle(self.t1, self.t2)
+    # ---------- rotation between lines ----------
+    def compute_required_rotation_rad(self, line1, line2, parallel_mode="opposite"):
+        """
+        Compute signed rotation (radians) needed to rotate line1 same
+        so it becomes parallel to line2.
+        """
+        if parallel_mode not in {"any", "same", "opposite"}:
+            raise ValueError("parallel_mode must be 'any', 'same', or 'opposite'")
 
-        if self.parallel_mode == "same":
+        t1 = self._unit_direction(line1)
+        t2 = self._unit_direction(line2)
+
+        delta_same = self.signed_angle(t1, t2)
+        delta_opposite = self.signed_angle(t1, -t2)
+
+        if parallel_mode == "same":
             return delta_same
-
-        # Otherwise pick smaller rotation that yields parallelism
-        delta_opposite = self.signed_angle(self.t1, -self.t2)
+        if parallel_mode == "opposite":
+            return delta_opposite
+        #Return smallest angle
         return delta_same if abs(delta_same) <= abs(delta_opposite) else delta_opposite
-    
 
-    # Rotate a Shape function.
+    def compute_required_rotation_deg(self, lines, parallel_mode="opposite"):
+        """
+        Computes rotation for piece 2.
+        lines: (line1, line2) where each line is (p0, p1)
+        """
+        line1, line2 = lines
+        return np.rad2deg(
+            self.compute_required_rotation_rad(line2, line1, parallel_mode)
+        )
+
+    # ---------- contour rotation ----------
     def rotate_contour(self, contour, angle_deg, center_xy=None, keep_shape=True):
-        """
-        Rotate a single contour by angle_deg around its centroid or a given center.
-        - contour: np.ndarray shaped (N, 2) or (N, 1, 2)
-        - center_xy: optional (x, y). If None, uses contour centroid via cv.moments,
-          falling back to arithmetic mean if m00 == 0 (degenerate area).
-        - keep_shape: if True, return with the same shape as input.
-        """
         if contour is None or len(contour) == 0:
             raise ValueError("rotate_contour: empty contour")
 
-        # Remember original shape to restore later if requested
-        orig_shape = contour.shape
+        orig = np.asarray(contour)
+        orig_shape = orig.shape
+        pts = orig.reshape(-1, 2).astype(np.float32)
 
-        # Normalize to (N, 2), float
-        pts = np.asarray(contour, dtype=np.float32).reshape(-1, 2)
-
-    # TODO: Replace with the getCenterPoint Method of Puzzles!! Determine rotation center----------------------
+        # Determine rotation center
         if center_xy is not None:
             cx, cy = center_xy
         else:
@@ -74,111 +102,134 @@ class Rotation:
                 cx = M["m10"] / M["m00"]
                 cy = M["m01"] / M["m00"]
             else:
-                # Degenerate contour (area ~ 0): use arithmetic mean as fallback
                 cx, cy = pts.mean(axis=0)
-    # ----------------------------------------------------------------------------------------------------------
+
         center = np.array([cx, cy], dtype=np.float32)
 
-        # Rotation matrix (2x2)
-        angle_rad = np.deg2rad(angle_deg)
+        angle_rad = np.deg2rad(angle_deg).astype(np.float32)
         c, s = np.cos(angle_rad), np.sin(angle_rad)
         rot_mat = np.array([[c, -s],
                             [s,  c]], dtype=np.float32)
 
-        # translate → rotate → translate back
         rotated = (pts - center) @ rot_mat.T + center
 
         if keep_shape:
-            # Restore original shape and dtype if you want
-            rotated = rotated.reshape(orig_shape).astype(contour.dtype, copy=False)
+            rotated = rotated.reshape(orig_shape).astype(np.float32, copy=False)
 
         return rotated
-    
+
+    def rotate_puzzle_in_place(self, puzzle, angle_deg, center_xy=None):
+        cnt = puzzle.get_contour() if hasattr(puzzle, "get_contour") else puzzle.contour
+        pts = np.asarray(cnt, dtype=np.float32).reshape(-1, 2)
+
+        # compute center once
+        if center_xy is None:
+            M = cv.moments(pts)
+            if abs(M["m00"]) > 1e-9:
+                cx = M["m10"] / M["m00"]
+                cy = M["m01"] / M["m00"]
+            else:
+                cx, cy = pts.mean(axis=0)
+            center_xy = (float(cx), float(cy))
+
+        # rotate contour using that center
+        cnt_rot = self.rotate_contour(cnt, angle_deg, center_xy=center_xy, keep_shape=True)
+
+        if hasattr(puzzle, "set_contour"):
+            puzzle.set_contour(cnt_rot)
+        else:
+            puzzle.contour = cnt_rot
+
+        # rotate corners using the SAME center
+        if hasattr(puzzle, "corners") and puzzle.corners is not None:
+            crn = np.asarray(puzzle.corners, dtype=np.float32).reshape(-1, 2)
+
+            cx, cy = center_xy
+            center = np.array([cx, cy], dtype=np.float32)
+
+            angle_rad = np.deg2rad(angle_deg).astype(np.float32)
+            c, s = np.cos(angle_rad), np.sin(angle_rad)
+            rot_mat = np.array([[c, -s],
+                                [s,  c]], dtype=np.float32)
+
+            crn_rot = (crn - center) @ rot_mat.T + center
+            puzzle.corners = crn_rot.reshape(4, 2).astype(np.float32)
+
+        return puzzle
 
 
-    def show(self, contours, cmap='tab10', linewidth=2, title='Detected Contours'):
+
+    def _unit(self, v):
+        v = np.asarray(v, dtype=np.float32).reshape(2,)
+        n = np.linalg.norm(v)
+        return v / (n + 1e-9)
+
+    def _signed_angle_rad(self, v_from, v_to) -> float:
+        """Signed angle (rad) rotating v_from -> v_to."""
+        a = self._unit(v_from)
+        b = self._unit(v_to)
+        cross = a[0]*b[1] - a[1]*b[0]
+        dot   = a[0]*b[0] + a[1]*b[1]
+        return float(np.arctan2(cross, dot))
+
+    def anchor_rotation_for_corner_deg(self, piece, flat_edges, dir1, dir2, tol_dot=0.95):
         """
-        Displays all contours in a matplotlib window with colors, area info, and proper scaling.
+        Returns angle_deg to rotate this piece so that the two flat edges
+        from their shared corner point align with the given directions.
+        dir = (x,y)
+        Right (-1,0)
+        Left (1,0)
+        Down (0,1)
+        Up (0,-1)
+
+
+        flat_edges: two edge indices (0..3)
+        Assumes piece.corners are in order [TL, TR, BR, BL] clockwise.
+        Edge convention: 0:(0->1), 1:(1->2), 2:(2->3), 3:(3->0)
         """
-        if not contours:
-            print("No contours to display.")
-            return
+        EDGE_TO = ((0, 1), (1, 2), (2, 3), (3, 0))
 
-        # Create a new figure
-        plt.figure(figsize=(8, 8))
-        colors = plt.get_cmap(cmap).colors
+        corners = np.asarray(piece.corners, dtype=np.float32).reshape(4, 2)
+        e0, e1 = int(flat_edges[0]) % 4, int(flat_edges[1]) % 4
 
-        for i, cnt in enumerate(contours):
-            area = cv.contourArea(cnt)
-            #print(f"Contour {i}: Area = {area:.2f}")
-            
-            cnt = np.asarray(cnt).reshape(-1, 2)
-            plt.plot(cnt[:, 0], cnt[:, 1],
-                    color=colors[i % len(colors)],
-                    linewidth=linewidth,
-                    label=f'Contour {i} (Area={area:.1f})')
+        # --- find common corner index of the two flat edges ---
+        s0 = set(EDGE_TO[e0])
+        s1 = set(EDGE_TO[e1])
+        common = list(s0 & s1)
+        if len(common) != 1:
+            raise ValueError(f"flat edges {flat_edges} do not share exactly one corner")
+        k = common[0]  # common corner index 0..3
 
-        # Improve visualization
-        plt.title(title)
-        plt.gca().invert_yaxis()       # Match OpenCV image coordinates
-        plt.axis("equal")              # Keep aspect ratio correct
-        plt.xlabel("X")
-        plt.ylabel("Y")
-        plt.legend(fontsize='small', loc='upper right', ncol=2)
-        plt.tight_layout()
-        
-        # Display window
-        plt.show()
+        def vec_from_common(edge_idx):
+            i, j = EDGE_TO[edge_idx]
+            other = j if i == k else i  # the corner on that edge that's not the common corner
+            return corners[other] - corners[k]  # vector starts at common corner
 
+        v0 = self._unit(vec_from_common(e0))
+        v1 = self._unit(vec_from_common(e1))
 
+        TOP   = self._unit(np.array(dir1, dtype=np.float32))
+        RIGHT = self._unit(np.array(dir2, dtype=np.float32))
 
-    # ---------- public getters ----------
-    def rotation_rad(self):
-        """Signed rotation (radians) to make line1 parallel to line2."""
-        return self._rotation_rad
+        def rotate_vec(v, ang_rad):
+            c, s = np.cos(ang_rad), np.sin(ang_rad)
+            R = np.array([[c, -s],
+                          [s,  c]], dtype=np.float32)
+            return self._unit(R @ v)
 
-    def rotation_deg(self):
-        """Signed rotation (degrees) to make line1 parallel to line2."""
-        return np.rad2deg(self._rotation_rad)
-    
-if __name__ == "__main__":
-    from edgedetection import EdgeDetection
+        # Try two assignments:
+        # A) v0 -> TOP, v1 -> RIGHT
+        # B) v1 -> TOP, v0 -> RIGHT
+        candidates = []
+        for vh, vv in [(v0, v1), (v1, v0)]:
+            ang = self._signed_angle_rad(vh, TOP)     # rotate this piece by ang
+            vv_rot = rotate_vec(vv, ang)
 
-    # Rotation Demo/ Walktrough. This Demo Allgns Puzzle 1 with Puzzle 4. 
-    ##Get Puzzles using EdgeDetection
-    path = "Data/puzzle_selfmade.jpg"
-    detector = EdgeDetection(path)
-    detector.load()
-    detector.find_contours()
-    detector.filter_contours()
+            score = float(np.dot(vv_rot, RIGHT))      # want +1 (same direction), not -1
+            ok = score >= tol_dot
+            candidates.append((ok, score, ang))
 
-    puzzles = detector.get_puzzle_pieces()
-    puzzle1 = puzzles[0]
-    puzzle3 = puzzles[2]
-    puzzle4 = puzzles[3]
-
-
-
-    line1 = puzzle1.get_best_4_corners()[0], puzzle1.get_best_4_corners()[1]
-    line2 = puzzle4.get_best_4_corners()[1], puzzle3.get_best_4_corners()[0]
-
-    #print(puzzle1.get_best_4_corners()[0], puzzle1.get_best_4_corners()[1])
-
-    aligner= Rotation(line1, line2, parallel_mode="same")
-    angle = aligner.rotation_deg()
-    print(angle)
-
-    #--------------------Visualization--------------------
-
-    ## Get contours
-    contours = [p.contour for p in puzzles]
-    center = puzzle1.get_center_point()
-    ## Add my rotated contour
-    cnt5 = aligner.rotate_contour(contours[0],angle, center) 
-    contours.append(cnt5)
-
-    detector.show_result()
-    aligner.show(contours)
-
-
-
+        # pick best: first any "ok", otherwise best score
+        candidates.sort(key=lambda t: (t[0], t[1]), reverse=True)
+        best_ang = candidates[0][2]
+        return float(np.rad2deg(best_ang))
