@@ -1,105 +1,97 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-building-block-view]]
-== Bausteinsicht
+== Klassendiagramm
+Das nachfolgende Diagramm zeigt die Klassen und ihre Methoden des Simulators.
+
+
+[plantuml, Sequenzdiagramm, svg]
+----
+@startuml
+skinparam classAttributeIconSize 0
+
+class EdgeDetection {
+  +load()
+  +find_contours()
+  +filter_contours()
+  +get_puzzle_pieces()
+}
+
+class PuzzlePiece {
+  +get_puzzle_edges()
+  +rotate()
+  +translate()
+}
+
+class PuzzleEdge {
+  +edge_type
+  +points
+}
+
+class Matching {
+  +find_matches(threshold)
+}
+
+class Match {
+  +score
+  +edge_a
+  +edge_b
+}
+
+class PuzzleOrganizer {
+  +organize()
+}
+
+class FlatEdgeFinder {
+  +log_edge_types()
+}
+
+class Anchor {
+  +choose_anchor()
+  +place_anchor()
+}
+
+class Rotation {
+  +rotate()
+}
+
+class Translation {
+  +translate()
+}
+
+class MatchPlacer {
+  +apply_matches()
+}
+
+class GlobalArea {
+  +set_unsolved_puzzles()
+  +set_solved_puzzles()
+  +scale_all_puzzles()
+  +translate_unsolved_puzzles()
+  +show()
+}
+
+' Beziehungen
+EdgeDetection --> PuzzlePiece : erzeugt
+PuzzlePiece *-- PuzzleEdge : besteht aus
+
+Matching --> Match : erzeugt
+Match --> PuzzleEdge : verknüpft
+
+PuzzleOrganizer --> PuzzlePiece
+FlatEdgeFinder --> PuzzlePiece
+
+Anchor --> PuzzlePiece
+Anchor --> Rotation
+Anchor --> Translation
+
+MatchPlacer --> Match
+MatchPlacer --> Rotation
+MatchPlacer --> Translation
+MatchPlacer --> PuzzlePiece
+
+GlobalArea --> PuzzlePiece
+
+@enduml
+----
 
-
-//Am Ende definieren
-
-
-=== Whitebox Gesamtsystem
-
-
-
-
-
-_**<Übersichtsdiagramm>**_
-
-Begründung:: _<Erläuternder Text>_
-
-Enthaltene Bausteine:: _<Beschreibung der enthaltenen Bausteine (Blackboxen)>_
-
-Wichtige Schnittstellen:: _<Beschreibung wichtiger Schnittstellen>_
-
-
-
-
-
-==== <Name Blackbox 1>
-
-
-
-
-
-_<Zweck/Verantwortung>_
-
-_<Schnittstelle(n)>_
-
-_<(Optional) Qualitäts-/Leistungsmerkmale>_
-
-_<(Optional) Ablageort/Datei(en)>_
-
-_<(Optional) Erfüllte Anforderungen>_
-
-_<(optional) Offene Punkte/Probleme/Risiken>_
-
-==== <Name Blackbox 2>
-
-_<Blackbox-Template>_
-
-==== <Name Blackbox n>
-
-_<Blackbox-Template>_
-
-
-==== <Name Schnittstelle 1>
-
-...
-
-==== <Name Schnittstelle m>
-
-=== Ebene 2
-
-
-
-
-
-==== Whitebox _<Baustein 1>_
-
-
-
-
-
-_<Whitebox-Template>_
-
-==== Whitebox _<Baustein 2>_
-
-_<Whitebox-Template>_
-
-...
-
-==== Whitebox _<Baustein m>_
-
-_<Whitebox-Template>_
-
-=== Ebene 3
-
-
-
-
-
-==== Whitebox <_Baustein x.1_>
-
-
-
-
-
-_<Whitebox-Template>_
-
-==== Whitebox <_Baustein x.2_>
-
-_<Whitebox-Template>_
-
-==== Whitebox <_Baustein y.1_>
-
-_<Whitebox-Template>_
