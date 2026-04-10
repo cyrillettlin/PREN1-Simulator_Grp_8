@@ -141,6 +141,7 @@ class Visualizer:
             th, tw = tile.shape[:2]
             canvas[y_offset:y_offset+th, x_offset:x_offset+tw] = tile
 
-        cv.imshow("Alle Puzzleteile mit erkannten Konturen und Ecken", canvas)
+        scaled_output = cv.resize(canvas, None, fx=0.4, fy=0.4, interpolation=cv.INTER_AREA)
+        cv.imshow("Alle Puzzleteile mit erkannten Konturen und Ecken", scaled_output)
         cv.waitKey(0)
         cv.destroyAllWindows()

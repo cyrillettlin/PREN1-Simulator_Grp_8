@@ -11,19 +11,70 @@ class Puzzle:
         self.center_point = self.get_center_point()
         self.edges = []
         self.corners = []
-        
+
 
     def get_contour(self):
         return self.contour
-    
+
     def set_contour(self,cnt):
         self.contour =cnt
 
-    def get_best_4_corners(self, epsilon_factor=0.00002):
+    @staticmethod
+    def get_angle(p1, p2, p3):
+        """Berechnet den Winkel bei p2 in Grad"""
+        v1 = np.array(p1) - np.array(p2)
+        v2 = np.array(p3) - np.array(p2)
+        norm1 = np.linalg.norm(v1)
+        norm2 = np.linalg.norm(v2)
+        if norm1 == 0 or norm2 == 0: return 180
+
+        cos_angle = np.dot(v1, v2) / (norm1 * norm2)
+        angle = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
+        return angle
+
+    @staticmethod
+    def is_convex(p1, p2, p3):
+        """prüft, ob Ecke p2 nach aussen geht"""
+        v1 = np.array(p2) - np.array(p1)
+        v2 = np.array(p3) - np.array(p2)
+        # Kreuzprodukt
+        res = v1[0] * v2[1] - v1[1] * v2[0]
+        # Wechseln, jeh nach dem ob Speicherung im Uhrzeigersinn oder Gegenuhrzeigersinn
+        return res < 0
+
+    def get_best_4_corners(self, epsilon_factor=0.04): #epsilon_factor=0.00002
             #Rauschen reduzieren
             epsilon = epsilon_factor * cv.arcLength(self.contour, True)
             approx = cv.approxPolyDP(self.contour, epsilon, True)
             approx_arr = approx.reshape(-1, 2)
+
+            n = len(approx_arr)
+            cx, cy = self.center_point
+
+            # Nur Punkte behalten, die ca. 90 Grad haben und nach aussen zeigen
+            filtered_points = []
+            for i in range(n):
+                p_prev = approx_arr[i - 1]
+                p_curr = approx_arr[i]
+                p_next = approx_arr[(i + 1) % n]
+
+                angle = self.get_angle(p_prev, p_curr, p_next)
+
+                if 70 <= angle <= 115:
+                    if self.is_convex(p_prev, p_curr, p_next):
+                        filtered_points.append(p_curr)
+
+            # Falls keine Winkel-> alle Punkte
+            if len(filtered_points) < 4:
+                search_pool = approx_arr
+            else:
+                #Distanz zum Zentrum nutzen
+                candidates = sorted(filtered_points,
+                                    key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2,
+                                    reverse=True)
+                search_pool = np.array(candidates)
+
+
 
             rect = cv.minAreaRect(self.contour)
             box = cv.boxPoints(rect)
@@ -32,25 +83,29 @@ class Puzzle:
             real_corners = []
 
             for box_point in box:
-                deltas = approx_arr - box_point
+                deltas = search_pool - box_point
                 dists = np.linalg.norm(deltas, axis=1)
 
                 min_idx = np.argmin(dists)
 
-                closest_point = tuple(approx_arr[min_idx])
-                real_corners.append(closest_point)
+                real_corners.append(tuple(search_pool[min_idx]))
 
 
-            real_corners = sorted(real_corners, key=lambda p: p[1]) 
+            real_corners = sorted(real_corners, key=lambda p: p[1])
 
-            top_group = sorted(real_corners[:2], key=lambda p: p[0]) 
-            bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True) 
+            top_group = sorted(real_corners[:2], key=lambda p: p[0])
+            bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True)
 
             sorted_corners = top_group + bottom_group
 
             return sorted_corners
 
     def get_puzzle_edges(self):
+        """
+        Robuste Extraktion der Kontursegmente zwischen den 4 Ecken.
+        Rückgabe: [top_edge, right_edge, bottom_edge, left_edge]
+        Jede Edge ist eine Liste von (x,y)-Tupeln entlang der Kontur.
+        """
         contour_pts = self.contour.reshape(-1, 2)
         n = len(contour_pts)
         corners = self.get_best_4_corners()
@@ -150,8 +205,8 @@ class Puzzle:
 
         self.edges = edges
         return edges
-    
-    
+
+
     def get_center_point(self):
         M = cv.moments(self.contour)
         if M["m00"] != 0:
@@ -160,12 +215,12 @@ class Puzzle:
             return (cx, cy)
         else:
             return (0, 0)
-    
+
     #Aktuell nicht verwendet, aber für Rotationtest notwendig
     def get_rotated_bounding_box(self):
 
-        rect = cv.minAreaRect(self.contour)   
-        box = cv.boxPoints(rect)               
+        rect = cv.minAreaRect(self.contour)
+        box = cv.boxPoints(rect)
         box = np.int32(box)
 
         sorted_by_y = sorted(box, key=lambda p: p[1])
