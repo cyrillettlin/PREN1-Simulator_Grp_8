@@ -1,7 +1,22 @@
 import cv2 as cv
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Puzzle:
+
+    # ── Schwellenwerte für die BB-Zuverlässigkeitsprüfung ──────────────────
+
+    # Nase-Zentralität: 0 = Rand, 1 = perfekte Mitte der Seite.
+    BB_CENTRALITY_THRESHOLD = 0.60
+
+    # Normierte Distanz Nasenspitze → nächste BB-Ecke (/ BB-Diagonale).
+    BB_NOSE_CORNER_DIST_THR = 0.20
+
+    # Mindest-Amplitude einer Nase (normiert), damit sie bewertet wird.
+    BB_MIN_NOSE_AMPLITUDE = 0.03
 
     def __init__(self, contour, index):
         self.index = index
@@ -11,44 +26,192 @@ class Puzzle:
         self.center_point = self.get_center_point()
         self.edges = []
         self.corners = []
-        
 
     def get_contour(self):
         return self.contour
-    
-    def set_contour(self,cnt):
-        self.contour =cnt
 
-    def get_best_4_corners(self, epsilon_factor=0.00002):
-            #Rauschen reduzieren
-            epsilon = epsilon_factor * cv.arcLength(self.contour, True)
-            approx = cv.approxPolyDP(self.contour, epsilon, True)
-            approx_arr = approx.reshape(-1, 2)
+    def set_contour(self, cnt):
+        self.contour = cnt
 
-            rect = cv.minAreaRect(self.contour)
-            box = cv.boxPoints(rect)
-            box = np.int32(box)
+    # ══════════════════════════════════════════════════════════════════════
+    # Öffentliche Hauptmethode
+    # ══════════════════════════════════════════════════════════════════════
 
-            real_corners = []
+    def get_best_4_corners(self, epsilon_factor=0.00002, cnn_predict_fn=None):
+        """
+        Wählt automatisch zwischen Bounding-Box- und CNN-Ansatz.
 
-            for box_point in box:
-                deltas = approx_arr - box_point
-                dists = np.linalg.norm(deltas, axis=1)
+        Checks (in Reihenfolge):
+          1. Nase-Zentralität  – sitzt eine Nase zu mittig auf einer Seite?
+          2. Nase-Ecken-Distanz – liegt eine Nasenspitze zu nahe an BB-Ecke?
+             (erkennt konvexe Nasen UND konkave Slots)
 
-                min_idx = np.argmin(dists)
+        Schlägt ein Check an → CNN (wenn verfügbar), sonst BB mit Warning.
+        """
+        reliable, reason = self._bb_is_reliable()
 
-                closest_point = tuple(approx_arr[min_idx])
-                real_corners.append(closest_point)
+        if not reliable:
+            logger.info(
+                f"Teil {self.index}: BB nicht zuverlaessig ({reason}) "
+                f"-> {'CNN' if cnn_predict_fn else 'BB trotzdem (kein CNN)'}"
+            )
+            if cnn_predict_fn is not None:
+                return cnn_predict_fn()
+            logger.warning(
+                f"Teil {self.index}: Kein CNN verfuegbar, BB wird trotzdem verwendet."
+            )
+        else:
+            logger.info(f"Teil {self.index}: BB zuverlaessig ({reason})")
 
+        return self._get_corners_bounding_box(epsilon_factor)
 
-            real_corners = sorted(real_corners, key=lambda p: p[1]) 
+    # ══════════════════════════════════════════════════════════════════════
+    # Check-Logik
+    # ══════════════════════════════════════════════════════════════════════
 
-            top_group = sorted(real_corners[:2], key=lambda p: p[0]) 
-            bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True) 
+    def _bb_is_reliable(self):
+        """
+        Prüft ob der BB-Ansatz zuverlässige Ecken liefert.
+        Checks pro Seite: Nasen-Zentralität und Nasen-Ecken-Distanz.
+        """
+        pts = self.contour.reshape(-1, 2).astype(float)
+        x, y, w, h = self.bounding_box
+        bb_diag = float(np.hypot(w, h))
 
-            sorted_corners = top_group + bottom_group
+        bb_corners = np.array([
+            [x,     y    ],   # OL
+            [x + w, y    ],   # OR
+            [x,     y + h],   # UL
+            [x + w, y + h],   # UR
+        ], dtype=float)
 
-            return sorted_corners
+        side_configs = [
+            # (name, Längsachse, Senkrechtachse, Richtung, Seitenstart, Seitenlänge, Ecken-Indizes)
+            ("oben",   0, 1, "min", x, w, [0, 1]),
+            ("unten",  0, 1, "max", x, w, [2, 3]),
+            ("links",  1, 0, "min", y, h, [0, 2]),
+            ("rechts", 1, 0, "max", y, h, [1, 3]),
+        ]
+
+        for name, ax, perp, direction, start, length, corner_idxs in side_configs:
+            result = self._analyze_side(
+                pts, ax, perp, direction, start, length,
+                bb_corners, corner_idxs, bb_diag
+            )
+            if result is None:
+                continue
+
+            centrality, nose_corner_dist, nose_type = result
+
+            logger.debug(
+                f"  Seite '{name}' [{nose_type}]: "
+                f"Zentralitaet={centrality:.2f}, BB-Dist={nose_corner_dist:.2f}"
+            )
+
+            if centrality > self.BB_CENTRALITY_THRESHOLD:
+                return False, (
+                    f"Seite '{name}' [{nose_type}]: "
+                    f"Nase-Zentralitaet {centrality:.2f} > {self.BB_CENTRALITY_THRESHOLD}"
+                )
+
+            if nose_corner_dist < self.BB_NOSE_CORNER_DIST_THR:
+                return False, (
+                    f"Seite '{name}' [{nose_type}]: "
+                    f"Nase-Ecken-Distanz {nose_corner_dist:.2f} < {self.BB_NOSE_CORNER_DIST_THR}"
+                )
+
+        return True, "Alle Checks bestanden"
+
+    def _analyze_side(self, pts, ax, perp, direction, start, length,
+                      bb_corners, corner_idxs, bb_diag):
+        """
+        Analysiert eine Seite auf gefährliche Nasenposition.
+
+        Erkennt BEIDE Typen:
+          - Konvexe Nase: ragt über die BB-Kante hinaus (wie bei Bild 1)
+          - Konkaver Slot: Einbuchtung ins Innere (wie bei Bild 2/3)
+
+        Der dominante Typ (grösste Amplitude) wird bewertet.
+        """
+        margin = 0.08 * length
+        mask = (
+            (pts[:, ax] >= start + margin) &
+            (pts[:, ax] <= start + length - margin)
+        )
+        side_pts = pts[mask]
+        if len(side_pts) < 5:
+            return None
+
+        if direction == "min":
+            bb_edge_val = bb_corners[corner_idxs[0], perp]
+        else:
+            bb_edge_val = bb_corners[corner_idxs[1], perp]
+
+        perp_vals = side_pts[:, perp]
+
+        if direction == "min":
+            # Konvex: ragt über die BB nach aussen (perp < bb_edge)
+            convex_amp  = max(0.0, bb_edge_val - perp_vals.min())
+            # Slot: Einbuchtung nach innen (perp > bb_edge)
+            concave_amp = max(0.0, perp_vals.max() - bb_edge_val)
+            if convex_amp >= concave_amp:
+                nose_type = "konvex"
+                tip_idx = int(np.argmin(perp_vals))
+            else:
+                nose_type = "konkav/slot"
+                tip_idx = int(np.argmax(perp_vals))
+        else:
+            convex_amp  = max(0.0, perp_vals.max() - bb_edge_val)
+            concave_amp = max(0.0, bb_edge_val - perp_vals.min())
+            if convex_amp >= concave_amp:
+                nose_type = "konvex"
+                tip_idx = int(np.argmax(perp_vals))
+            else:
+                nose_type = "konkav/slot"
+                tip_idx = int(np.argmin(perp_vals))
+
+        amplitude = max(convex_amp, concave_amp) / bb_diag
+        if amplitude < self.BB_MIN_NOSE_AMPLITUDE:
+            return None
+
+        nose_tip = side_pts[tip_idx]
+        rel = (nose_tip[ax] - start) / length
+        centrality = 1.0 - 2.0 * abs(rel - 0.5)
+
+        dists = [np.linalg.norm(nose_tip - bb_corners[i]) for i in corner_idxs]
+        nose_corner_dist = min(dists) / bb_diag
+
+        return centrality, nose_corner_dist, nose_type
+
+    # ══════════════════════════════════════════════════════════════════════
+    # BB-Ecken-Berechnung (originale Logik, unverändert)
+    # ══════════════════════════════════════════════════════════════════════
+
+    def _get_corners_bounding_box(self, epsilon_factor=0.00002):
+        epsilon = epsilon_factor * cv.arcLength(self.contour, True)
+        approx = cv.approxPolyDP(self.contour, epsilon, True)
+        approx_arr = approx.reshape(-1, 2)
+
+        rect = cv.minAreaRect(self.contour)
+        box = cv.boxPoints(rect)
+        box = np.int32(box)
+
+        real_corners = []
+        for box_point in box:
+            deltas = approx_arr - box_point
+            dists = np.linalg.norm(deltas, axis=1)
+            min_idx = np.argmin(dists)
+            real_corners.append(tuple(approx_arr[min_idx]))
+
+        real_corners = sorted(real_corners, key=lambda p: p[1])
+        top_group    = sorted(real_corners[:2], key=lambda p: p[0])
+        bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True)
+
+        return top_group + bottom_group
+
+    # ══════════════════════════════════════════════════════════════════════
+    # Rest der Klasse (unverändert)
+    # ══════════════════════════════════════════════════════════════════════
 
     def get_puzzle_edges(self):
         contour_pts = self.contour.reshape(-1, 2)
@@ -101,7 +264,6 @@ class Puzzle:
             seg = [tuple(contour_pts[j % n]) for j in range(idx1, idx2 + 1)]
             segments.append(seg)
 
-        # Validierung: kurze oder lange Segmente ersetzen
         max_fraction = 0.90
         min_points = 3
         validated_segments = []
@@ -116,7 +278,6 @@ class Puzzle:
             else:
                 validated_segments.append(seg)
 
-        # Klassifizierung top/right/bottom/left basierend auf Mittelpunkt
         cx, cy = self.center_point
         ordered = {"top": [], "right": [], "bottom": [], "left": []}
 
@@ -140,18 +301,15 @@ class Puzzle:
                 else:
                     ordered["top"] = seg
 
-        # Kanten als Dict mit Typ zurückgeben
         edges = [
-            {"points": ordered.get("top", []), "type": "inner"},
-            {"points": ordered.get("right", []), "type": "inner"},
+            {"points": ordered.get("top", []),    "type": "inner"},
+            {"points": ordered.get("right", []),  "type": "inner"},
             {"points": ordered.get("bottom", []), "type": "inner"},
-            {"points": ordered.get("left", []), "type": "inner"},
+            {"points": ordered.get("left", []),   "type": "inner"},
         ]
-
         self.edges = edges
         return edges
-    
-    
+
     def get_center_point(self):
         M = cv.moments(self.contour)
         if M["m00"] != 0:
@@ -160,35 +318,23 @@ class Puzzle:
             return (cx, cy)
         else:
             return (0, 0)
-    
-    #Aktuell nicht verwendet, aber für Rotationtest notwendig
+
     def get_rotated_bounding_box(self):
-
-        rect = cv.minAreaRect(self.contour)   
-        box = cv.boxPoints(rect)               
+        rect = cv.minAreaRect(self.contour)
+        box = cv.boxPoints(rect)
         box = np.int32(box)
-
         sorted_by_y = sorted(box, key=lambda p: p[1])
-        top_two = sorted(sorted_by_y[:2], key=lambda p: p[0])
+        top_two    = sorted(sorted_by_y[:2], key=lambda p: p[0])
         bottom_two = sorted(sorted_by_y[2:], key=lambda p: p[0])
-
         tl, tr = top_two
         bl, br = bottom_two
-
-        top_edge = [tuple(tl), tuple(tr)]
-        right_edge = [tuple(tr), tuple(br)]
-        bottom_edge = [tuple(br), tuple(bl)]
-        left_edge = [tuple(bl), tuple(tl)]
-
-        return [top_edge, right_edge, bottom_edge, left_edge]
+        return [
+            [tuple(tl), tuple(tr)],
+            [tuple(tr), tuple(br)],
+            [tuple(br), tuple(bl)],
+            [tuple(bl), tuple(tl)],
+        ]
 
     def __repr__(self):
         x, y, w, h = self.bounding_box
-        return f"PuzzlePiece {self.index}: Fläche={self.area:.2f}, Box=({x},{y},{w},{h})"
-    
-
-
-
-    
-
-   
+        return f"PuzzlePiece {self.index}: Flaeche={self.area:.2f}, Box=({x},{y},{w},{h})"
