@@ -173,20 +173,11 @@ class Rotation:
         return float(np.arctan2(cross, dot))
 
     def anchor_rotation_for_corner_deg(self, piece, flat_edges, dir1, dir2, tol_dot=0.95):
-        """
-        Returns angle_deg to rotate this piece so that the two flat edges
-        from their shared corner point align with the given directions.
-        dir = (x,y)
-        Right (-1,0)
-        Left (1,0)
-        Down (0,1)
-        Up (0,-1)
-
-
-        flat_edges: two edge indices (0..3)
-        Assumes piece.corners are in order [TL, TR, BR, BL] clockwise.
-        Edge convention: 0:(0->1), 1:(1->2), 2:(2->3), 3:(3->0)
-        """
+        if len(flat_edges) < 2:
+            raise ValueError(
+                f"anchor_rotation_for_corner_deg braucht genau 2 Flat-Edges, "
+                f"bekommen: {len(flat_edges)} → {flat_edges}"
+            )
         EDGE_TO = ((0, 1), (1, 2), (2, 3), (3, 0))
 
         corners = np.asarray(piece.corners, dtype=np.float32).reshape(4, 2)

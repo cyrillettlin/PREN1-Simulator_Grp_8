@@ -53,10 +53,12 @@ class EdgeComparator:
         return new_edge
 
     def get_edge_type(self, edge_norm: np.ndarray):
-        #Klassifiziert die Kante: tab, hole, flat
+        edge_norm = np.asarray(edge_norm)
+        # Sicherstellen dass edge_norm 2D mit mind. 2 Punkten ist
+        if edge_norm.ndim < 2 or edge_norm.shape[0] < 2:
+            return "flat"
 
         threshold = 0.12
-
         ys = edge_norm[:, 1]
         max_y = np.max(ys)
         min_y = np.min(ys)
@@ -69,12 +71,13 @@ class EdgeComparator:
             return "flat"
 
     def compare(self) -> float:
-        #Vergleich zweier Kanten.
+        # Degenerate Kanten sofort abfangen
+        if len(self.edge_a) < 2 or len(self.edge_b) < 2:
+            return 99.0  # als flat/unmatchbar behandeln
 
-        #Normalisieren
         A_norm = self._normalize_geometry(self.edge_a)
         B_norm = self._normalize_geometry(self.edge_b)
-        
+
         A = self._resample_edge(A_norm)
         B = self._resample_edge(B_norm)
         

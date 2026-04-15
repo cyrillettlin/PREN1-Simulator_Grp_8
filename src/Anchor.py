@@ -13,18 +13,22 @@ class Anchor:
 
     def choose_anchor(self, solved_puzzles):
         """
-        Pick an anchor piece and return (anchor_piece, flat_edges).
-        Current policy:
-          - use first piece, but warn if it doesn't have exactly 2 flat edges
+        Pick a piece with exactly 2 flat edges (= corner piece).
+        Falls back to first piece if none found.
         """
+        for piece in solved_puzzles:
+            flats = self.flat_finder.flat_edges(piece)
+            if len(flats) == 2:
+                self.log.info(f"Anchor: Piece {getattr(piece, 'index', '?')} mit 2 Flat-Edges {flats} gewählt.")
+                return piece, flats
+
+        # Fallback
         anchor = solved_puzzles[0]
         flats = self.flat_finder.flat_edges(anchor)
-
-        if len(flats) != 2:
-            self.log.warning(
-                f"Anchor piece {getattr(anchor, 'index', '?')} has {len(flats)} flat edges: {flats}. "
-                "Corner anchoring expects exactly 2."
-            )
+        self.log.warning(
+            f"Kein Piece mit genau 2 Flat-Edges gefunden. "
+            f"Fallback auf Piece {getattr(anchor, 'index', '?')} ({len(flats)} Flat-Edges: {flats})."
+        )
         return anchor, flats
 
     def _shared_corner_idx(self,edge_a: int, edge_b: int) -> int:

@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 # Puzzleteile einlesen
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-path = os.path.join(BASE_DIR, "../Data/puzzle_real_example_2.jpg")
+path = os.path.join(BASE_DIR, "../Data/difficult_image_5.jpg")
 
 detector = EdgeDetection(path)
 detector.load()
