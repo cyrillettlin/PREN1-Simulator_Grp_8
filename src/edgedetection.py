@@ -29,7 +29,7 @@ class EdgeDetection:
         """Find contours using Gaussian blur + Otsu threshold."""
         img_blur = cv.GaussianBlur(self.src_gray, (5,5), 0)
         _, img_thresh = cv.threshold(img_blur, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
-        contours, _ = cv.findContours(img_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv.findContours(img_thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
         self.contours = contours
         logging.info(f"Gefundene Konturen: {len(contours)}")
         return contours
