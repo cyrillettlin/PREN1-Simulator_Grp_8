@@ -7,7 +7,14 @@ class Puzzle:
         self.index = index
         self.contour = contour
         self.area = cv.contourArea(contour)
-        self.bounding_box = cv.boundingRect(contour)
+
+        # nur für das Logging
+        self.rect_simple = cv.boundingRect(contour) #boundingbox parallel zum Bildrahmen
+        # für mathematische Berechnungen
+        self.rect_rotated = cv.minAreaRect(contour) #rotierte boundingbox
+        # für Abwärtskompatibilität für Logging Skript im Code
+        self.bounding_box = self.rect_simple
+
         self.center_point = self.get_center_point()
         self.edges = []
         self.corners = []
@@ -42,7 +49,8 @@ class Puzzle:
         # Wechseln, jeh nach dem ob Speicherung im Uhrzeigersinn oder Gegenuhrzeigersinn
         return res < 0
 
-    def get_best_4_corners(self, epsilon_factor=0.04): #epsilon_factor=0.00002
+    def get_best_4_corners(self, epsilon_factor=0.04): #epsilon_factor=0.00002, muss je nach Bildqualität angepasst werden
+            """Extrahiert die 4 markantesten Ecken basierend auf der rotierten Bounding Box"""
             #Rauschen reduzieren
             epsilon = epsilon_factor * cv.arcLength(self.contour, True)
             approx = cv.approxPolyDP(self.contour, epsilon, True)
@@ -76,12 +84,13 @@ class Puzzle:
 
 
 
-            rect = cv.minAreaRect(self.contour)
-            box = cv.boxPoints(rect)
+            #Rotated bounding box
+            box = cv.boxPoints(self.rect_rotated)
             box = np.int32(box)
 
             real_corners = []
 
+            #für jede Ecke der Bounding Box den nächsten Punkt finden
             for box_point in box:
                 deltas = search_pool - box_point
                 dists = np.linalg.norm(deltas, axis=1)
@@ -90,14 +99,14 @@ class Puzzle:
 
                 real_corners.append(tuple(search_pool[min_idx]))
 
-
+            # Ecken sortieren (Oben-Links, Oben-Rechts, Unten-Rechts, Unten-Links)
+            # Erst nach Y sortieren, um obere und untere Gruppe zu trennen
             real_corners = sorted(real_corners, key=lambda p: p[1])
 
             top_group = sorted(real_corners[:2], key=lambda p: p[0])
             bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True)
 
             sorted_corners = top_group + bottom_group
-
             return sorted_corners
 
     def get_puzzle_edges(self):
@@ -219,7 +228,7 @@ class Puzzle:
     #Aktuell nicht verwendet, aber für Rotationtest notwendig
     def get_rotated_bounding_box(self):
 
-        rect = cv.minAreaRect(self.contour)
+        rect = cv.minAreaRect(self.contour) #Rotated bounding box
         box = cv.boxPoints(rect)
         box = np.int32(box)
 
@@ -237,10 +246,6 @@ class Puzzle:
 
         return [top_edge, right_edge, bottom_edge, left_edge]
 
-    def __repr__(self):
-        x, y, w, h = self.bounding_box
-        return f"PuzzlePiece {self.index}: Fläche={self.area:.2f}, Box=({x},{y},{w},{h})"
-    
 
 
 
