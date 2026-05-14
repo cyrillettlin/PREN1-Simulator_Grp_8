@@ -1,5 +1,8 @@
+import logging
+
 import cv2 as cv
 import numpy as np
+from typing import List, Tuple, Dict, Optional
 
 class Puzzle:
 
@@ -7,7 +10,9 @@ class Puzzle:
         self.index = index
         self.contour = contour
         self.area = cv.contourArea(contour)
+        self.center_point = self.get_center_point()
 
+        #bounding box
         # nur für das Logging
         self.rect_simple = cv.boundingRect(contour) #boundingbox parallel zum Bildrahmen
         # für mathematische Berechnungen
@@ -15,9 +20,18 @@ class Puzzle:
         # für Abwärtskompatibilität für Logging Skript im Code
         self.bounding_box = self.rect_simple
 
-        self.center_point = self.get_center_point()
-        self.edges = []
-        self.corners = []
+        #Caching, für Performance
+        self.corners: Optional[List[Tuple[int, int]]] = None
+        self.edges: Optional[List[Dict]] = None
+
+        # Initiales Logging für das Puzzleteil
+        x, y, w, h = self.rect_simple
+        logging.info(
+            f"PuzzlePiece {self.index} initialisiert: "
+            f"Fläche={self.area:.1f}px², "
+            f"Schwerpunkt={self.center_point}, "
+            f"Box=(x:{x}, y:{y}, w:{w}, h:{h})"
+        )
 
 
     def get_contour(self):
@@ -27,226 +41,154 @@ class Puzzle:
         self.contour =cnt
 
     @staticmethod
-    def get_angle(p1, p2, p3):
-        """Berechnet den Winkel bei p2 in Grad"""
+    def get_angle(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
+        """Berechnet den Innenwinkel bei p2 in Grad"""
         v1 = np.array(p1) - np.array(p2)
         v2 = np.array(p3) - np.array(p2)
-        norm1 = np.linalg.norm(v1)
-        norm2 = np.linalg.norm(v2)
-        if norm1 == 0 or norm2 == 0: return 180
 
-        cos_angle = np.dot(v1, v2) / (norm1 * norm2)
-        angle = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
-        return angle
+        a1 = np.arctan2(v1[1], v1[0])
+        a2 = np.arctan2(v2[1], v2[0])
+        angle = np.abs(np.degrees(a1 - a2))
+        return angle if angle <= 180 else 360 - angle
 
     @staticmethod
-    def is_convex(p1, p2, p3):
-        """prüft, ob Ecke p2 nach aussen geht"""
+    def is_convex(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> bool:
+        """prüft via Kreuzprodukt ob Ecke p2 nach aussen geht, res <0 muss eventuell angepasst werden, jeh nach dem ob Speicherung im Uhrzeigersinn oder Gegenuhrzeigersinn"""
         v1 = np.array(p2) - np.array(p1)
         v2 = np.array(p3) - np.array(p2)
-        # Kreuzprodukt
-        res = v1[0] * v2[1] - v1[1] * v2[0]
-        # Wechseln, jeh nach dem ob Speicherung im Uhrzeigersinn oder Gegenuhrzeigersinn
-        return res < 0
+        return (v1[0] * v2[1] - v1[1] * v2[0]) < 0
 
-    def get_best_4_corners(self, epsilon_factor=0.04): #epsilon_factor=0.00002, muss je nach Bildqualität angepasst werden
+    def get_best_4_corners(self, epsilon_factor: float =0.04) -> List[Tuple[int, int]]: #epsilon_factor=0.00002, muss je nach Bildqualität angepasst werden
             """Extrahiert die 4 markantesten Ecken basierend auf der rotierten Bounding Box"""
             #Rauschen reduzieren
+            #Cache
+            if self.corners is not None:
+                return self.corners
+
+            # 1. Kontur vereinfachen
             epsilon = epsilon_factor * cv.arcLength(self.contour, True)
-            approx = cv.approxPolyDP(self.contour, epsilon, True)
-            approx_arr = approx.reshape(-1, 2)
+            approx = cv.approxPolyDP(self.contour, epsilon, True).reshape(-1, 2)
 
-            n = len(approx_arr)
-            cx, cy = self.center_point
-
-            # Nur Punkte behalten, die ca. 90 Grad haben und nach aussen zeigen
-            filtered_points = []
+            # 2. Kandidaten filtern (Winkel & Konvexität)
+            candidates = []
+            n = len(approx)
             for i in range(n):
-                p_prev = approx_arr[i - 1]
-                p_curr = approx_arr[i]
-                p_next = approx_arr[(i + 1) % n]
+                angle = self.get_angle(approx[i-1], approx[i], approx[(i+1)%n])
+                if 70 <= angle <= 115 and self.is_convex(approx[i-1], approx[i], approx[(i+1)%n]):
+                 candidates.append(approx[i])
 
-                angle = self.get_angle(p_prev, p_curr, p_next)
+            # Falls zu wenig markante Ecken, nimm die am weitesten vom Zentrum entfernten Punkte
+            search_pool = np.array(candidates) if len(candidates) >= 4 else approx
 
-                if 70 <= angle <= 115:
-                    if self.is_convex(p_prev, p_curr, p_next):
-                        filtered_points.append(p_curr)
-
-            # Falls keine Winkel-> alle Punkte
-            if len(filtered_points) < 4:
-                search_pool = approx_arr
-            else:
-                #Distanz zum Zentrum nutzen
-                candidates = sorted(filtered_points,
-                                    key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2,
-                                    reverse=True)
-                search_pool = np.array(candidates)
-
-
-
-            #Rotated bounding box
-            box = cv.boxPoints(self.rect_rotated)
-            box = np.int32(box)
-
+            # 3. Abgleich mit rotierter Bounding Box
+            box_points = np.int32(cv.boxPoints(self.rect_rotated))
             real_corners = []
 
-            #für jede Ecke der Bounding Box den nächsten Punkt finden
-            for box_point in box:
-                deltas = search_pool - box_point
-                dists = np.linalg.norm(deltas, axis=1)
+            for bp in box_points:
+                # Vektorisierte Distanzberechnung
+                dists = np.linalg.norm(search_pool - bp, axis=1)
+                real_corners.append(tuple(search_pool[np.argmin(dists)]))
 
-                min_idx = np.argmin(dists)
-
-                real_corners.append(tuple(search_pool[min_idx]))
-
-            # Ecken sortieren (Oben-Links, Oben-Rechts, Unten-Rechts, Unten-Links)
-            # Erst nach Y sortieren, um obere und untere Gruppe zu trennen
+            # 4. Sortierung: Oben-Links, Oben-Rechts, Unten-Rechts, Unten-Links
             real_corners = sorted(real_corners, key=lambda p: p[1])
+            top = sorted(real_corners[:2], key=lambda p: p[0])
+            bottom = sorted(real_corners[2:], key=lambda p: p[0], reverse=True)
 
-            top_group = sorted(real_corners[:2], key=lambda p: p[0])
-            bottom_group = sorted(real_corners[2:], key=lambda p: p[0], reverse=True)
+            self.corners = top + bottom
 
-            sorted_corners = top_group + bottom_group
-            return sorted_corners
+            logging.info(
+                f"  Teil {self.index} Ecken gefunden: "
+                f"Oben-Links={self.corners[0]}, Oben-Rechts={self.corners[1]}, "
+                f"Unten-Rechts={self.corners[2]}, Unten-Links={self.corners[3]}"
+            )
 
-    def get_puzzle_edges(self):
+            return self.corners
+
+
+    def get_puzzle_edges(self) -> List[Dict]:
         """
         Robuste Extraktion der Kontursegmente zwischen den 4 Ecken.
         Rückgabe: [top_edge, right_edge, bottom_edge, left_edge]
         Jede Edge ist eine Liste von (x,y)-Tupeln entlang der Kontur.
         """
+        if self.edges is not None:
+            return self.edges
+
         contour_pts = self.contour.reshape(-1, 2)
-        n = len(contour_pts)
+        n_pts = len(contour_pts)
         corners = self.get_best_4_corners()
 
-        if n == 0 or len(corners) != 4:
-            edges = [{"points": [], "type": "inner"} for _ in range(4)]
-            self.edges = edges
-            return edges
+        if n_pts == 0 or len(corners) != 4:
+            logging.warning(f"Teil {self.index}: Ecken konnten nicht bestimmt werden.")
+            return [{"points": [], "type": "inner"} for _ in range(4)]
 
-        corner_candidate_indices = []
+        corner_indices = []
         for c in corners:
             dists = np.linalg.norm(contour_pts - np.array(c), axis=1)
-            sorted_idx = np.argsort(dists)
-            corner_candidate_indices.append(list(sorted_idx))
+            corner_indices.append(np.argmin(dists))
 
-        used = set()
-        assigned = [None] * 4
+        corner_indices.sort()
+
+        # Segmente extrahieren
+        raw_segments = []
         for i in range(4):
-            for idx in corner_candidate_indices[i]:
-                if idx not in used:
-                    assigned[i] = int(idx)
-                    used.add(idx)
-                    break
-            if assigned[i] is None:
-                base = corner_candidate_indices[i][0]
-                found = False
-                for offset in range(1, n):
-                    for cand in [(base + offset) % n, (base - offset) % n]:
-                        if cand not in used:
-                            assigned[i] = int(cand)
-                            used.add(cand)
-                            found = True
-                            break
-                    if found:
-                        break
-                if not found:
-                    assigned[i] = int(base)
+            idx1 = corner_indices[i]
+            idx2 = corner_indices[(i + 1) % 4]
 
-        idx_corner_pairs = list(zip(assigned, corners))
-        idx_corner_pairs.sort(key=lambda x: x[0])
-
-        segments = []
-        for i in range(4):
-            idx1 = idx_corner_pairs[i][0]
-            idx2 = idx_corner_pairs[(i + 1) % 4][0]
             if idx2 < idx1:
-                idx2 += n
-            seg = [tuple(contour_pts[j % n]) for j in range(idx1, idx2 + 1)]
-            segments.append(seg)
-
-        # Validierung: kurze oder lange Segmente ersetzen
-        max_fraction = 0.90
-        min_points = 3
-        validated_segments = []
-        for i, seg in enumerate(segments):
-            if len(seg) < min_points or len(seg) > int(n * max_fraction):
-                p1 = tuple(idx_corner_pairs[i][1])
-                p2 = tuple(idx_corner_pairs[(i + 1) % 4][1])
-                num = max(abs(p2[0] - p1[0]), abs(p2[1] - p1[1])) + 1
-                xs = np.linspace(p1[0], p2[0], num, dtype=int)
-                ys = np.linspace(p1[1], p2[1], num, dtype=int)
-                validated_segments.append(list(zip(xs.tolist(), ys.tolist())))
+                seg = np.vstack((contour_pts[idx1:], contour_pts[:idx2 + 1]))
             else:
-                validated_segments.append(seg)
+                seg = contour_pts[idx1:idx2 + 1]
 
-        # Klassifizierung top/right/bottom/left basierend auf Mittelpunkt
+            raw_segments.append([tuple(p) for p in seg])
+
+        # Segmente geometrisch analysieren und der richtigen Himmelsrichtung zuweisen
         cx, cy = self.center_point
-        ordered = {"top": [], "right": [], "bottom": [], "left": []}
+        classified = {"top": [], "right": [], "bottom": [], "left": []}
 
-        for seg in validated_segments:
+        for seg in raw_segments:
             if not seg:
                 continue
-            xs = [p[0] for p in seg]
-            ys = [p[1] for p in seg]
-            mx = sum(xs) / len(xs)
-            my = sum(ys) / len(ys)
-            dx = mx - cx
-            dy = my - cy
-            if abs(dx) > abs(dy):
-                if dx > 0:
-                    ordered["right"] = seg
-                else:
-                    ordered["left"] = seg
-            else:
-                if dy > 0:
-                    ordered["bottom"] = seg
-                else:
-                    ordered["top"] = seg
+            seg_arr = np.array(seg)
+            # Mittelpunkt des Segments berechnen
+            mx, my = np.mean(seg_arr, axis=0)
+            # Vektor vom Schwerpunkt zum Segment-Mittelpunkt
+            dx, dy = mx - cx, my - cy
 
-        # Kanten als Dict mit Typ zurückgeben
-        edges = [
-            {"points": ordered.get("top", []), "type": "inner"},
-            {"points": ordered.get("right", []), "type": "inner"},
-            {"points": ordered.get("bottom", []), "type": "inner"},
-            {"points": ordered.get("left", []), "type": "inner"},
+            # Geometrische Zuordnung basierend auf der dominanten Achse
+            if abs(dx) > abs(dy):
+                label = "right" if dx > 0 else "left"
+            else:
+                label = "bottom" if dy > 0 else "top"
+
+            classified[label] = seg
+
+        self.edges = [
+            {"points": classified["top"], "side": "top"},
+            {"points": classified["right"], "side": "right"},
+            {"points": classified["bottom"], "side": "bottom"},
+            {"points": classified["left"], "side": "left"}
         ]
 
-        self.edges = edges
-        return edges
+        logging.info(
+            f"  Teil {self.index} Kanten geometrisch geordnet (Pixel): "
+            f"Top={len(classified['top'])}, Right={len(classified['right'])}, "
+            f"Bottom={len(classified['bottom'])}, Left={len(classified['left'])}"
+        )
 
+        return self.edges
 
-    def get_center_point(self):
-        M = cv.moments(self.contour)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-            return (cx, cy)
-        else:
-            return (0, 0)
+    def get_center_point(self) -> Tuple[int, int]:
+        """calculate the center point of the puzzle with moments"""
+        m = cv.moments(self.contour)
+        if m["m00"] != 0:
+            cx = int(m["m10"] / m["m00"])
+            cy = int(m["m01"] / m["m00"])
+            return (int(m["m10"] / m["m00"]), int(m["m01"] / m["m00"]))
+        return (0, 0)
 
-    #Aktuell nicht verwendet, aber für Rotationtest notwendig
-    def get_rotated_bounding_box(self):
-
-        rect = cv.minAreaRect(self.contour) #Rotated bounding box
-        box = cv.boxPoints(rect)
-        box = np.int32(box)
-
-        sorted_by_y = sorted(box, key=lambda p: p[1])
-        top_two = sorted(sorted_by_y[:2], key=lambda p: p[0])
-        bottom_two = sorted(sorted_by_y[2:], key=lambda p: p[0])
-
-        tl, tr = top_two
-        bl, br = bottom_two
-
-        top_edge = [tuple(tl), tuple(tr)]
-        right_edge = [tuple(tr), tuple(br)]
-        bottom_edge = [tuple(br), tuple(bl)]
-        left_edge = [tuple(bl), tuple(tl)]
-
-        return [top_edge, right_edge, bottom_edge, left_edge]
-
-
+    def __repr__(self) -> str:
+        return f"PuzzlePiece(id={self.index}, area={self.area:.1f})"
 
 
     
